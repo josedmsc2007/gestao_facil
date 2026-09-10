@@ -1,0 +1,24 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.iws
+
+### Eclipse / VS Code ###
+.classpath
+.project
+.settings/
+.vscode/
+
+### Sistema operacional ###
+.DS_Store
+Thumbs.db
+
+### Nunca versionar senha real do banco ###
+# Este arquivo guarda a senha do PostgreSQL de cada integrante e NAO vai para
+# o Git. O modelo a copiar e o application-local.properties.exemplo, que VAI
+# para o Git - a regra abaixo nao o alcanca, porque o nome dele nao e igual.
+# Sem barra no inicio, a regra vale em qualquer pasta do projeto.
+application-local.properties

@@ -1,0 +1,39 @@
+# ============================================================
+# Gestao Facil - configuracao LOCAL (modelo)
+# ============================================================
+#
+# ESTE arquivo (.exemplo) VAI para o Git: e o modelo do grupo.
+# O arquivo que voce vai criar a partir dele NAO vai para o Git.
+#
+# Na primeira vez que clonar o projeto, copie este arquivo para a raiz
+# com o nome application-local.properties:
+#
+#   Windows (PowerShell):
+#     Copy-Item application-local.properties.exemplo application-local.properties
+#
+#   Windows (Prompt de comando):
+#     copy application-local.properties.exemplo application-local.properties
+#
+#   Linux / macOS:
+#     cp application-local.properties.exemplo application-local.properties
+#
+# Depois troque a senha abaixo pela SUA senha do PostgreSQL.
+#
+# O application.properties importa esse arquivo com "optional:", entao o que
+# estiver aqui sobrescreve o que esta la. Coloque aqui APENAS as linhas que
+# mudam na sua maquina - todo o resto continua vindo do application.properties.
+# ============================================================
+
+# Senha do usuario postgres na SUA maquina. Obrigatorio.
+spring.datasource.password=troque-pela-sua-senha
+
+# ------------------------------------------------------------
+# Opcionais - descomente so se a sua instalacao for diferente
+# ------------------------------------------------------------
+
+# Se o seu PostgreSQL nao estiver na porta 5432 (acontece quando ha mais de
+# uma versao instalada), ajuste a porta aqui:
+#spring.datasource.url=jdbc:postgresql://localhost:5433/gestao_facil
+
+# Se voce criou outro usuario no pgAdmin em vez de usar o postgres:
+#spring.datasource.username=outro_usuario
