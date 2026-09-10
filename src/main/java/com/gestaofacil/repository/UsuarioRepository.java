@@ -3,6 +3,7 @@ package com.gestaofacil.repository;
 import com.gestaofacil.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,4 +45,14 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     /** Verifica se o login ja existe naquela empresa, antes de cadastrar. */
     boolean existsByEmpresaIdAndLogin(Long empresaId, String login);
+
+    /**
+     * Usuarios da empresa com bloqueio ATIVO agora (RN005).
+     *
+     * "BloqueadoAteAfter" vira "where bloqueado_ate > ?". Passando o momento
+     * atual, ficam de fora os bloqueios que ja venceram sozinhos - eles nao
+     * precisam mais da acao do Administrador.
+     */
+    List<Usuario> findByEmpresaIdAndBloqueadoAteAfterOrderByNome(Long empresaId,
+                                                                 LocalDateTime momento);
 }

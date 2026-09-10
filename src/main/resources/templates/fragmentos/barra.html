@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    Barra do topo, reaproveitada por todas as telas internas.
+
+    th:fragment cria um pedaco de HTML com nome, que outras telas incluem com
+    th:replace. Assim o botao "Sair" existe num arquivo so: se ele mudar,
+    muda em todas as telas de uma vez.
+
+    O parametro (logado) e o usuario da sessao, passado por quem inclui.
+-->
+<nav th:fragment="barra(logado)" class="navbar navbar-expand bg-primary" data-bs-theme="dark">
+    <div class="container-fluid">
+
+        <span class="navbar-brand mb-0">Gestão Fácil</span>
+
+        <div class="d-flex align-items-center gap-3">
+            <span class="navbar-text text-white-50 small d-none d-sm-inline"
+                  th:text="${logado.empresaNome}">Empresa</span>
+
+            <!--
+                #001-RF05 - Sair.
+
+                E um FORMULARIO com method="post", e nao um link. O Spring
+                Security so aceita logout por POST com token CSRF, e isso e
+                proposital: com um link simples, outro site poderia deslogar
+                o usuario sem que ele pedisse.
+
+                O th:action faz o Thymeleaf incluir o token sozinho.
+            -->
+            <form th:action="@{/logout}" method="post" class="m-0">
+                <button type="submit" class="btn btn-sm btn-outline-light">Sair</button>
+            </form>
+        </div>
+
+    </div>
+</nav>
+
+</body>
+</html>

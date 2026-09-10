@@ -1,0 +1,50 @@
+/* ============================================================
+   Gestao Facil - ajustes proprios, por cima do Bootstrap
+   ============================================================
+   O Bootstrap resolve quase tudo. Aqui ficam so os poucos ajustes
+   que ele nao cobre. Quanto menos coisa neste arquivo, melhor.
+   ============================================================ */
+
+/* Fundo suave nas telas de entrada (login e troca de senha). */
+.tela-de-entrada {
+    background-color: #f2f4f7;
+}
+
+/*
+   Centraliza a caixa de login vertical e horizontalmente.
+
+   min-height: 100dvh usa a altura REAL visivel do celular. A unidade
+   antiga, 100vh, ignora a barra de enderecos do navegador e empurra
+   parte da tela para fora - o botao "Entrar" ficava escondido em
+   alguns aparelhos.
+*/
+.caixa-central {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+/* A caixa nao passa de 420px: em telas grandes o formulario continua
+   estreito e facil de ler; no celular ocupa a largura toda. */
+.caixa-central > .card {
+    width: 100%;
+    max-width: 420px;
+}
+
+.sombra-suave {
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/*
+   Area de toque confortavel no celular.
+
+   16px tambem evita um comportamento chato do iPhone: com fonte menor
+   que isso, o navegador da zoom sozinho ao tocar no campo.
+*/
+.form-control-lg {
+    font-size: 1rem;
+    min-height: 3rem;
+}

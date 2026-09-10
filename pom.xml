@@ -71,6 +71,18 @@
         </dependency>
 
         <!-- Ferramentas de teste (JUnit, Mockito). So valem em src/test -->
+        <!-- H2: banco em memoria usado APENAS pelos testes automatizados.
+             Assim "mvnw test" roda em qualquer maquina do grupo, sem precisar
+             do PostgreSQL no ar nem da senha em application-local.properties,
+             e sem sujar o banco de desenvolvimento. A configuracao esta em
+             src/test/resources/application.properties. Para rodar os testes
+             contra o PostgreSQL de verdade, apague esta dependencia e aquele
+             arquivo. -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

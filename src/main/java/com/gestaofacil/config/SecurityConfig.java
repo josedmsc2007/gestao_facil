@@ -1,5 +1,9 @@
 package com.gestaofacil.config;
 
+import com.gestaofacil.security.AutenticacaoFalhaHandler;
+import com.gestaofacil.security.EntradaNoLoginPorEmpresa;
+import com.gestaofacil.security.SaidaPorEmpresaHandler;
+import com.gestaofacil.security.DetalhesLoginEmpresa;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,15 +14,9 @@ import org.springframework.security.web.SecurityFilterChain;
 /**
  * Configuracao do Spring Security.
  *
- * ATENCAO: esta classe esta PROVISORIA. Como a tela de login ainda nao existe
- * (tarefa #001), aqui so ficam as duas coisas que o esqueleto precisa:
- *
- * 1. o PasswordEncoder, que gera e confere o hash das senhas (RN010);
- * 2. uma regra temporaria liberando todas as URLs, para que a aplicacao suba
- *    sem a tela de login padrao do Spring atrapalhar o teste.
- *
- * Na tarefa #001 o metodo filterChain sera reescrito para exigir autenticacao,
- * apontar para a tela de login propria e aplicar as regras por perfil (RN006).
+ * Atende a tarefa #001 por inteiro: autenticacao considerando a empresa,
+ * telas de login e troca de senha, redirecionamento por perfil (RN006),
+ * bloqueio por tentativas invalidas (RN004) e encerramento da sessao (RF05).
  */
 @Configuration
 public class SecurityConfig {
@@ -31,9 +29,6 @@ public class SecurityConfig {
      *   para a senha;
      * - e propositalmente lento e usa "sal" aleatorio, entao a mesma senha
      *   gera hashes diferentes e ataques de forca bruta ficam caros.
-     *
-     * @Bean significa: "Spring, guarde este objeto e entregue a quem pedir um
-     * PasswordEncoder" - e assim que a carga inicial recebe ele pronto.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -41,18 +36,114 @@ public class SecurityConfig {
     }
 
     /**
-     * Cadeia de filtros de seguranca: define o que exige login e o que nao exige.
+     * Cadeia de filtros de seguranca: define o que exige login e o que nao,
+     * e como o login e processado.
      *
-     * Enquanto nao existe tela de login, tudo e liberado. O CSRF fica desligado
-     * porque ainda nao ha formularios; ele volta a ser ligado (padrao do Spring)
-     * junto com a tela de login.
+     * Os tratadores chegam prontos por parametro: o Spring ve que sao
+     * componentes e entrega aqui.
      */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           AutenticacaoFalhaHandler falhaHandler,
+                                           EntradaNoLoginPorEmpresa entradaNoLogin,
+                                           SaidaPorEmpresaHandler saidaHandler) throws Exception {
         http
+                // ATENCAO: NAO acrescente aqui .authenticationProvider(...).
+                //
+                // O AutenticacaoPorEmpresaProvider esta anotado como
+                // componente, e so por isso o Spring Security ja o adota.
+                // Registra-lo tambem aqui o coloca DUAS vezes na fila: cada
+                // tentativa de login executa o provider duas vezes e conta
+                // dois erros. O bloqueio da RN004 disparava na terceira
+                // tentativa em vez da quinta. Foi um teste que pegou isso.
+
                 .authorizeHttpRequests(requisicoes -> requisicoes
-                        .anyRequest().permitAll())
-                .csrf(csrf -> csrf.disable());
+                        // Arquivos de estilo e imagens: liberados, senao a
+                        // propria tela de login ficaria sem CSS.
+                        .requestMatchers("/css/**", "/js/**", "/imagens/**",
+                                "/favicon.ico", "/manifest.json").permitAll()
+
+                        // As telas de login precisam ser abertas por quem
+                        // ainda nao entrou. "/*/login" cobre o endereco com
+                        // empresa (/construtora-teste/login) e "/login" cobre
+                        // o caminho de excecao, sem empresa no endereco.
+                        .requestMatchers("/login", "/*/login").permitAll()
+
+                        // Regras por perfil (RN006). Cada tela inicial so
+                        // abre para o perfil a que pertence. Se um motorista
+                        // digitar /painel na barra de enderecos, leva 403.
+                        .requestMatchers("/painel").hasRole("ADMINISTRADOR")
+                        .requestMatchers("/lancamentos").hasRole("MOTORISTA")
+
+                        // Telas de administracao de usuarios, incluindo o
+                        // desbloqueio de contas (RN005).
+                        .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
+
+                        // Todo o resto exige estar logado. Esta linha e a que
+                        // sustenta o criterio "sistema impede acesso de
+                        // usuarios nao cadastrados".
+                        .anyRequest().authenticated())
+
+                .formLogin(formulario -> formulario
+                        // Tela de login. Na pratica quem escolhe o destino de
+                        // quem nao esta logado e o entradaNoLogin, la embaixo.
+                        .loginPage("/login")
+
+                        // Endereco para onde o formulario envia os dados.
+                        // E o Spring quem trata este POST - nao existe (nem
+                        // deve existir) um metodo de controller para ele.
+                        .loginProcessingUrl("/login")
+
+                        // Nomes dos campos do formulario, em portugues.
+                        .usernameParameter("usuario")
+                        .passwordParameter("senha")
+
+                        // Aqui entra a empresa: para cada tentativa de login,
+                        // o Spring monta um DetalhesLoginEmpresa, que le o
+                        // campo "empresa" enviado pelo formulario.
+                        .authenticationDetailsSource(DetalhesLoginEmpresa::new)
+
+                        // Login recusado: volta para a tela de login DA
+                        // EMPRESA, e nao para a tela generica.
+                        .failureHandler(falhaHandler)
+
+                        // Login aceito: todo mundo vai para "/", e o
+                        // InicioController decide o destino conforme o perfil
+                        // (RN006) ou manda trocar a senha temporaria (RF07).
+                        // O "true" faz valer sempre, mesmo que o usuario
+                        // tenha tentado abrir outra tela antes de entrar.
+                        .defaultSuccessUrl("/", true))
+
+                // #001-RF05: encerramento da sessao.
+                .logout(saida -> saida
+                        // O Spring so aceita logout por POST, com token CSRF.
+                        // Um simples link nao serve - e proposital: assim
+                        // outro site nao consegue deslogar o usuario.
+                        .logoutUrl("/logout")
+
+                        // Volta para a tela de login DA EMPRESA.
+                        .logoutSuccessHandler(saidaHandler)
+
+                        // Invalida a sessao no servidor: o identificador
+                        // antigo deixa de valer, mesmo que alguem o guarde.
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+
+                        // Apaga o cookie de sessao do navegador.
+                        .deleteCookies("JSESSIONID"))
+
+                // Quem nao esta logado e pede uma tela protegida cai aqui.
+                // O atalho /construtora-teste chega neste ponto e e mandado
+                // para a tela de login da propria empresa.
+                .exceptionHandling(excecoes -> excecoes
+                        .authenticationEntryPoint(entradaNoLogin));
+
+        // Repare no que NAO esta escrito aqui: a linha csrf(disable) que
+        // existia no esqueleto foi removida. Com isso o CSRF volta ao padrao
+        // do Spring, que e LIGADO. Ele impede que outro site force um envio
+        // de formulario em nome de quem esta logado. Os formularios Thymeleaf
+        // incluem o token sozinhos, desde que usem th:action.
+
         return http.build();
     }
 }

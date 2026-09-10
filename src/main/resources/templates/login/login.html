@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- Sem esta linha o celular mostra a pagina "encolhida", como se fosse
+         um computador. E ela que faz o layout responsavel funcionar. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Entrar - Gestão Fácil</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" th:href="@{/css/gestao-facil.css}">
+</head>
+<body class="tela-de-entrada">
+
+<main class="container">
+    <div class="caixa-central">
+
+        <div class="card sombra-suave">
+            <div class="card-body p-4">
+
+                <h1 class="h4 text-center mb-1">Gestão Fácil</h1>
+
+                <!-- Nome da empresa: so aparece quando o endereco identificou
+                     a empresa. Serve para o funcionario confirmar que abriu o
+                     atalho certo antes de digitar a senha. -->
+                <p class="text-center text-secondary mb-4"
+                   th:if="${empresaConhecida}"
+                   th:text="${nomeEmpresa}">Nome da Empresa</p>
+
+                <!-- #001-RF04: mensagem generica. Nao diz se errou o usuario
+                     ou a senha - dizer entregaria metade da resposta a quem
+                     esta tentando adivinhar. -->
+                <div class="alert alert-danger" role="alert"
+                     th:if="${param.erro != null}">
+                    Usuário ou senha incorretos.
+                </div>
+
+                <!-- RN004: bloqueio por tentativas. Aqui a mensagem NAO e
+                     generica de proposito - sem ela o funcionario ficaria
+                     tentando a senha certa sem entender por que nao entra. -->
+                <div class="alert alert-warning" role="alert"
+                     th:if="${param.bloqueado != null}">
+                    <strong>Conta bloqueada.</strong><br>
+                    Foram cinco tentativas seguidas com senha errada. A conta
+                    abre sozinha em até 30 minutos, ou peça ao administrador
+                    da empresa para liberar agora.
+                </div>
+
+                <!-- #001-RF05: confirmacao de que a sessao foi encerrada. -->
+                <div class="alert alert-success" role="alert"
+                     th:if="${param.saiu != null}">
+                    Você saiu do sistema.
+                </div>
+
+                <div class="alert alert-warning" role="alert"
+                     th:if="${empresaNaoEncontrada}">
+                    Não encontramos essa empresa. Confira o endereço ou informe
+                    a empresa abaixo.
+                </div>
+
+                <!-- th:action (e nao action) e o que faz o Thymeleaf incluir
+                     sozinho o campo escondido do CSRF. Sem ele, o Spring
+                     Security recusaria o envio. -->
+                <form th:action="@{/login}" method="post">
+
+                    <!-- CAMINHO NORMAL: a empresa veio do endereco, entao vai
+                         escondida. O funcionario digita so usuario e senha,
+                         como pede o #001-RF02. -->
+                    <input type="hidden" name="empresa"
+                           th:if="${empresaConhecida}"
+                           th:value="${identificadorEmpresa}">
+
+                    <!-- CAMINHO DE EXCECAO: endereco sem empresa. O mesmo
+                         campo aparece, agora visivel. -->
+                    <div class="mb-3" th:unless="${empresaConhecida}">
+                        <label for="empresa" class="form-label">Empresa</label>
+                        <input type="text" id="empresa" name="empresa"
+                               class="form-control form-control-lg"
+                               th:value="${identificadorEmpresa}"
+                               autocapitalize="none" autocorrect="off" spellcheck="false"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="usuario" class="form-label">Usuário</label>
+                        <!-- autocapitalize="none" e essencial no celular: sem
+                             isso o teclado poe maiuscula na primeira letra e o
+                             login falha sem o funcionario entender por que. -->
+                        <input type="text" id="usuario" name="usuario"
+                               class="form-control form-control-lg"
+                               autocomplete="username"
+                               autocapitalize="none" autocorrect="off" spellcheck="false"
+                               required autofocus>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="senha" class="form-label">Senha</label>
+                        <input type="password" id="senha" name="senha"
+                               class="form-control form-control-lg"
+                               autocomplete="current-password"
+                               required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        Entrar
+                    </button>
+                </form>
+
+                <!-- #001-RF06: nao ha e-mail nem SMS. Quem redefine a senha e
+                     o Administrador da empresa. -->
+                <p class="text-center text-secondary small mt-4 mb-0">
+                    Esqueceu a senha? Peça ao administrador da empresa
+                    para gerar uma senha nova.
+                </p>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+
+</body>
+</html>
