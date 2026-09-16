@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    #001.1-RF01 - grava a empresa do usuario logado como atalho da tela /login.
+
+    POR QUE AQUI, E NAO NA TELA DE LOGIN
+    A regra RN002 diz que a empresa so e gravada quando o login DA CERTO.
+    Este fragmento so e incluido em telas internas, e tela interna so abre
+    para quem esta logado. Estar vendo esta tag, portanto, ja prova que o
+    login deu certo. Quem apenas visita /construtora-teste/login nunca
+    recebe esta tag.
+
+    Hoje ele e incluido pela barra do topo (todas as telas internas) e pela
+    tela de troca de senha, que nao tem barra. Tela interna nova que use a
+    barra ja ganha isso sem fazer nada.
+
+    Os dois valores saem da sessao e vao para o localStorage do navegador
+    pelo atalhos-empresa.js. O servidor nao guarda lista nenhuma.
+-->
+<script th:fragment="gravar(logado)"
+        th:src="@{/js/atalhos-empresa.js}"
+        th:data-gravar-identificador="${logado.empresaIdentificador}"
+        th:data-gravar-nome="${logado.empresaNome}"></script>
+
+</body>
+</html>

@@ -2,7 +2,9 @@ package com.gestaofacil.controller;
 
 import com.gestaofacil.model.Empresa;
 import com.gestaofacil.repository.EmpresaRepository;
+import com.gestaofacil.security.AvisoDeTentativasNaSessao;
 import com.gestaofacil.security.UsuarioAutenticado;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,9 +30,12 @@ import java.util.Optional;
 public class LoginController {
 
     private final EmpresaRepository empresaRepository;
+    private final AvisoDeTentativasNaSessao avisoDeTentativas;
 
-    public LoginController(EmpresaRepository empresaRepository) {
+    public LoginController(EmpresaRepository empresaRepository,
+                           AvisoDeTentativasNaSessao avisoDeTentativas) {
         this.empresaRepository = empresaRepository;
+        this.avisoDeTentativas = avisoDeTentativas;
     }
 
     /**
@@ -57,12 +62,16 @@ public class LoginController {
     @GetMapping("/{identificador:[a-z0-9-]+}/login")
     public String loginDaEmpresa(@PathVariable String identificador,
                                  @AuthenticationPrincipal UsuarioAutenticado logado,
+                                 HttpServletRequest request,
                                  Model model) {
 
         // Ja esta logado? Nao faz sentido ver a tela de login de novo.
         if (logado != null) {
             return "redirect:/";
         }
+
+        // #001.1-RF02: null quando nao ha aviso a mostrar.
+        model.addAttribute("tentativasRestantes", avisoDeTentativas.retirarAviso(request));
 
         Optional<Empresa> empresa = empresaRepository.findByIdentificador(identificador);
 
@@ -89,10 +98,12 @@ public class LoginController {
      */
     @GetMapping("/login")
     public String loginSemEmpresa(@AuthenticationPrincipal UsuarioAutenticado logado,
+                                  HttpServletRequest request,
                                   Model model) {
         if (logado != null) {
             return "redirect:/";
         }
+        model.addAttribute("tentativasRestantes", avisoDeTentativas.retirarAviso(request));
         model.addAttribute("empresaConhecida", false);
         model.addAttribute("identificadorEmpresa", "");
         return "login/login";

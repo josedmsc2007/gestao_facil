@@ -1,6 +1,7 @@
 package com.gestaofacil.config;
 
 import com.gestaofacil.security.AutenticacaoFalhaHandler;
+import com.gestaofacil.security.AutenticacaoSucessoHandler;
 import com.gestaofacil.security.EntradaNoLoginPorEmpresa;
 import com.gestaofacil.security.SaidaPorEmpresaHandler;
 import com.gestaofacil.security.DetalhesLoginEmpresa;
@@ -45,6 +46,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            AutenticacaoFalhaHandler falhaHandler,
+                                           AutenticacaoSucessoHandler sucessoHandler,
                                            EntradaNoLoginPorEmpresa entradaNoLogin,
                                            SaidaPorEmpresaHandler saidaHandler) throws Exception {
         http
@@ -110,9 +112,11 @@ public class SecurityConfig {
                         // Login aceito: todo mundo vai para "/", e o
                         // InicioController decide o destino conforme o perfil
                         // (RN006) ou manda trocar a senha temporaria (RF07).
-                        // O "true" faz valer sempre, mesmo que o usuario
-                        // tenha tentado abrir outra tela antes de entrar.
-                        .defaultSuccessUrl("/", true))
+                        // Vale sempre, mesmo que o usuario tenha tentado abrir
+                        // outra tela antes de entrar. Ate o #001.1 isto era
+                        // .defaultSuccessUrl("/", true); o handler faz o mesmo
+                        // e ainda zera o aviso de tentativas da sessao.
+                        .successHandler(sucessoHandler))
 
                 // #001-RF05: encerramento da sessao.
                 .logout(saida -> saida

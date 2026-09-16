@@ -21,15 +21,28 @@ import java.io.IOException;
  * Entao lemos de volta o campo "empresa" que veio no formulario e devolvemos
  * o usuario para a tela da empresa dele, com ?erro no final para a tela saber
  * que deve mostrar a mensagem.
+ *
+ * #001.1-RF02: e aqui tambem que a falha entra na contagem da sessao, usada
+ * so para o aviso de tentativas restantes. Este ponto recebe TODA falha - de
+ * senha, de usuario inexistente, de empresa inexistente - e por isso a
+ * contagem nao depende de o usuario existir.
  */
 @Component
 public class AutenticacaoFalhaHandler extends SimpleUrlAuthenticationFailureHandler {
+
+    private final AvisoDeTentativasNaSessao avisoDeTentativas;
+
+    public AutenticacaoFalhaHandler(AvisoDeTentativasNaSessao avisoDeTentativas) {
+        this.avisoDeTentativas = avisoDeTentativas;
+    }
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,
                                         AuthenticationException excecao)
             throws IOException, jakarta.servlet.ServletException {
+
+        avisoDeTentativas.registrarFalha(request);
 
         String empresa = request.getParameter("empresa");
 

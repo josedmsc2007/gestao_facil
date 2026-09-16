@@ -69,5 +69,9 @@
     </div>
 </main>
 
+<!-- #001.1-RF01: esta tela nao tem a barra do topo, que e quem normalmente
+     grava o atalho. Quem chega aqui ja fez login com sucesso. -->
+<script th:replace="~{fragmentos/atalhos-empresa :: gravar(${logado})}"></script>
+
 </body>
 </html>

@@ -35,6 +35,26 @@
                     Usuário ou senha incorretos.
                 </div>
 
+                <!-- #001.1-RF02: aviso de tentativas restantes. So aparece
+                     junto com o erro e a partir da terceira falha seguida do
+                     mesmo login - quem decide isso e o AvisoDeTentativasNaSessao.
+                     Mostra apenas o numero, nunca nome ou perfil (RN009), e e
+                     igual para login existente e inventado (RN005). -->
+                <div class="alert alert-warning" role="alert"
+                     th:if="${param.erro != null and tentativasRestantes != null}">
+                    <span th:if="${tentativasRestantes > 1}"
+                          th:text="|Atenção: restam ${tentativasRestantes} tentativas antes do bloqueio da conta.|">
+                        Atenção: restam 2 tentativas antes do bloqueio da conta.
+                    </span>
+                    <span th:if="${tentativasRestantes == 1}">
+                        Atenção: resta 1 tentativa antes do bloqueio da conta.
+                    </span>
+                    <span th:if="${tentativasRestantes == 0}">
+                        Atenção: o limite de tentativas foi atingido. A conta pode
+                        estar bloqueada.
+                    </span>
+                </div>
+
                 <!-- RN004: bloqueio por tentativas. Aqui a mensagem NAO e
                      generica de proposito - sem ela o funcionario ficaria
                      tentando a senha certa sem entender por que nao entra. -->
@@ -61,6 +81,27 @@
                 <!-- th:action (e nao action) e o que faz o Thymeleaf incluir
                      sozinho o campo escondido do CSRF. Sem ele, o Spring
                      Security recusaria o envio. -->
+                <!-- #001.1-RF01: atalhos de empresa. So na tela /login, sem
+                     empresa no endereco - por isso fica de fora tanto a
+                     empresa conhecida quanto a nao encontrada.
+
+                     O servidor manda esta caixa SEMPRE VAZIA e escondida.
+                     Quem a preenche e o atalhos-empresa.js, com as empresas
+                     que ESTE navegador ja acessou com sucesso. Nenhuma
+                     empresa cadastrada sai do servidor aqui (#001.1-RN001). -->
+                <th:block th:if="${not empresaConhecida and empresaNaoEncontrada == null}">
+                    <div id="atalhos-empresa" class="mb-4" hidden>
+                        <p class="form-label mb-2">Empresas já acessadas neste navegador</p>
+                        <ul class="list-group" data-lista></ul>
+                        <p class="text-secondary small mt-2 mb-0">
+                            Ou informe outra empresa abaixo.
+                        </p>
+                    </div>
+                    <script th:src="@{/js/atalhos-empresa.js}"
+                            data-exibir="atalhos-empresa"
+                            th:data-endereco-base="@{/}"></script>
+                </th:block>
+
                 <form th:action="@{/login}" method="post">
 
                     <!-- CAMINHO NORMAL: a empresa veio do endereco, entao vai

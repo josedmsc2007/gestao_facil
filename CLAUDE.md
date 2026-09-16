@@ -21,10 +21,12 @@ e ao professor — não os edite.
 
 ## Estado atual
 
-**Pronto — card #001 (login), com 36 testes automatizados:**
+**Pronto — cards #001 (login) e #001.1 (melhorias do login), com 57 testes:**
 
 - autenticação com isolamento por empresa, bloqueio por tentativas e logout
 - telas de login, troca obrigatória de senha e contas bloqueadas
+- aviso de tentativas restantes a partir da 3ª falha (#001.1-RF02)
+- atalhos de empresa na tela `/login` (#001.1-RF01)
 - entidades `Empresa` e `Usuario` com seus repositórios
 - carga inicial (`config/CargaInicial`): empresa `construtora-teste`,
   usuário `admin`, senha `admin12345`
@@ -119,10 +121,42 @@ O formulário sempre envia para `POST /login` com três campos: `empresa`,
 usuário com `findByEmpresaIdAndLogin`. Não existe busca por login sozinho — o
 isolamento é estrutural.
 
+Login aceito passa pelo `security/AutenticacaoSucessoHandler`, que substituiu
+o `.defaultSuccessUrl("/", true)`: manda todo mundo para `/` do mesmo jeito e
+ainda zera o aviso de tentativas.
+
 **Armadilha registrada:** o provider é um componente e o Spring Security já o
 adota sozinho. Nunca acrescente `.authenticationProvider(...)` no
 `SecurityConfig` — ele passa a rodar duas vezes por tentativa e o bloqueio da
 RN004 dispara na terceira em vez da quinta.
+
+### Dois contadores de tentativas (#001.1-RF02)
+
+- **Banco** (`tentativas_invalidas`, `ControleDeTentativasService`): o único
+  que **bloqueia** a conta. Só existe para usuário real.
+- **Sessão** (`security/AvisoDeTentativasNaSessao`): só **exibe** o aviso,
+  contado por empresa + login digitado, subindo em toda falha, exista o login
+  ou não. Nunca troque o aviso pelo número do banco: login inventado ficaria
+  sem aviso, e isso revelaria quais logins existem (#001-RF04).
+
+O `AutenticacaoFalhaHandler` registra a falha, o `AutenticacaoSucessoHandler`
+zera a contagem daquele login e o `LoginController` retira o aviso da sessão
+(vale para uma exibição só).
+
+### Atalhos de empresa (#001.1-RF01)
+
+A tela `/login` mostra as empresas em que **este navegador** já fez login com
+sucesso, guardadas no `localStorage` por `static/js/atalhos-empresa.js`.
+
+- **Gravar:** o fragmento `fragmentos/atalhos-empresa :: gravar(logado)` está
+  na barra do topo e em `trocar-senha.html`. Como só tela interna o inclui, a
+  empresa nunca é gravada por simples visita. Tela interna sem a barra precisa
+  incluí-lo.
+- **Exibir e remover:** só no navegador; o servidor manda a caixa vazia.
+- **Proibido:** endpoint, busca, lista ou sugestão de empresas na tela de login.
+  Ela é pública e exporia os clientes do sistema. O servidor nunca lê nem
+  recebe a lista de atalhos.
+- O script monta a tela com `textContent`, nunca `innerHTML`.
 
 ### O usuário logado
 
@@ -168,15 +202,17 @@ um link.
 
 ### Telas
 
-**Não existe layout base ainda.** Existe apenas o fragmento
-`templates/fragmentos/barra.html` (barra do topo com o botão Sair), incluído
+**Não existe layout base ainda.** Existem apenas os fragmentos
+`templates/fragmentos/barra.html` (barra do topo com o botão Sair, que também
+grava o atalho de empresa) e `fragmentos/atalhos-empresa.html`. A barra entra
 assim nas telas internas:
 
 ```html
 <nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
 ```
 
-O `<head>` com o CDN do Bootstrap está **repetido** nas cinco telas. Antes do
+O `<head>` com o CDN do Bootstrap está **repetido** nas cinco telas. JavaScript
+próprio vai em `static/js/`, rota já liberada no `SecurityConfig`. Antes do
 próximo CRUD, decidam se criam um layout base — a duplicação vai se multiplicar.
 
 Telas pensadas para motorista no celular: campos `form-control-lg`, botões
