@@ -132,9 +132,10 @@ Com a aplicação rodando, em `http://localhost:8080`:
 | `/login` | Tela de login sem empresa no endereço. Mostra um campo a mais, para informar a empresa |
 | `/painel` | Tela inicial do Administrador *(provisória)* |
 | `/lancamentos` | Tela inicial do Motorista *(provisória)* |
-| `/usuarios/bloqueados` | Contas bloqueadas por erro de senha, com a opção de liberar *(só Administrador)* |
+| `/usuarios` | Lista de funcionários, com cadastro, edição, redefinição de senha, desbloqueio e ativação *(só Administrador)* |
+| `/usuarios/novo` | Cadastro de funcionário *(só Administrador)* |
 
-As três últimas só abrem depois do login. Digitar o endereço direto sem estar
+As quatro últimas só abrem depois do login. Digitar o endereço direto sem estar
 logado devolve para a tela de login.
 
 ## Credenciais de teste

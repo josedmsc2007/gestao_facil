@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -29,10 +30,31 @@ import java.time.LocalDateTime;
          * e sobre o par (empresa_id, login), e nao sobre o login sozinho.
          * Quem garante isso e o banco, nao a tela.
          */
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_usuario_empresa_login",
-                columnNames = {"empresa_id", "login"}
-        )
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_usuario_empresa_login",
+                        columnNames = {"empresa_id", "login"}),
+
+                /*
+                 * #003-RN004: o CPF segue a mesma ideia do login - e unico
+                 * DENTRO da empresa, nao no sistema inteiro. A mesma pessoa
+                 * pode ser motorista em duas construtoras que usam o Gestao
+                 * Facil, e nenhuma das duas precisa saber da outra.
+                 *
+                 * Quem realmente garante isso e esta linha, nao a tela: duas
+                 * abas do navegador enviando o mesmo CPF ao mesmo tempo
+                 * passariam pela conferencia do controller, mas o banco
+                 * recusa a segunda.
+                 *
+                 * Linhas com cpf nulo nao atrapalham: tanto o PostgreSQL
+                 * quanto o H2 permitem varios nulos numa coluna unica. E por
+                 * isso que o usuario "admin" da carga inicial, que nasceu sem
+                 * CPF, continua funcionando.
+                 */
+                @UniqueConstraint(
+                        name = "uk_usuario_empresa_cpf",
+                        columnNames = {"empresa_id", "cpf"})
+        }
 )
 public class Usuario {
 
@@ -74,9 +96,44 @@ public class Usuario {
     @Column(length = 80)
     private String cargo;
 
-    /** CPF, guardado so com numeros. Opcional neste momento do projeto. */
+    /**
+     * CPF, guardado SO COM NUMEROS (#003-RN006): "12345678909", nunca
+     * "123.456.789-09". Guardar sempre do mesmo jeito e o que permite
+     * comparar dois CPFs e confiar na restricao unica la de cima - com a
+     * mascara, o mesmo CPF entraria duas vezes escrito de formas diferentes.
+     * Quem tira os pontos e o tracinho e o ValidadorDeCpf.
+     *
+     * A coluna aceita nulo porque o "admin" da carga inicial nasceu sem CPF,
+     * antes deste card. A tela de cadastro (#003-RN001) o exige de todo
+     * usuario novo.
+     */
     @Column(length = 11)
     private String cpf;
+
+    /**
+     * Numero de registro da CNH (#003-RF02).
+     *
+     * #003-RN003: NAO e o CPF. A CNH mostra o CPF no documento, mas tem um
+     * numero proprio, com 11 digitos, que muda a cada renovacao. Por isso os
+     * dois vivem em colunas separadas.
+     *
+     * Obrigatorio apenas para o perfil MOTORISTA (#003-RN002); para o
+     * Administrador fica nulo.
+     */
+    @Column(length = 11)
+    private String cnh;
+
+    /** Categoria da habilitacao: A, B, C, D, E ou combinacoes como "AB". */
+    @Column(name = "categoria_cnh", length = 5)
+    private String categoriaCnh;
+
+    /**
+     * Validade da habilitacao. E um LocalDate (data sem hora) porque o que
+     * importa e o dia do vencimento - base para o alerta de CNH vencida que
+     * o documento de requisitos preve para mais adiante.
+     */
+    @Column(name = "validade_cnh")
+    private LocalDate validadeCnh;
 
     /**
      * Perfil de acesso (secao 2 dos requisitos).
@@ -184,6 +241,30 @@ public class Usuario {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
+    }
+
+    public String getCnh() {
+        return cnh;
+    }
+
+    public void setCnh(String cnh) {
+        this.cnh = cnh;
+    }
+
+    public String getCategoriaCnh() {
+        return categoriaCnh;
+    }
+
+    public void setCategoriaCnh(String categoriaCnh) {
+        this.categoriaCnh = categoriaCnh;
+    }
+
+    public LocalDate getValidadeCnh() {
+        return validadeCnh;
+    }
+
+    public void setValidadeCnh(LocalDate validadeCnh) {
+        this.validadeCnh = validadeCnh;
     }
 
     public Perfil getPerfil() {

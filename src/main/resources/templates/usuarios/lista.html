@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Usuários')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Usuários</h1>
+        <a th:href="@{/usuarios/novo}" class="btn btn-primary">Novo usuário</a>
+    </div>
+
+    <p class="text-secondary">
+        Funcionários de <strong th:text="${logado.empresaNome}">Empresa</strong> com acesso
+        ao sistema. Ninguém é excluído: quem sai da empresa é desativado e continua
+        aparecendo nos lançamentos antigos.
+    </p>
+
+    <!-- Confirmacao de uma acao, enviada por addFlashAttribute. -->
+    <div class="alert alert-success" role="alert" th:if="${mensagem}"
+         th:text="${mensagem}">Usuário cadastrado.</div>
+
+    <!-- Recusa de uma acao pelas regras de conta (#003-RN014 e RN015).
+         Tambem vem por flash attribute: a mensagem e longa demais para caber
+         num parametro da URL, e assim ela nao volta a aparecer se o
+         Administrador recarregar a pagina. -->
+    <div class="alert alert-danger" role="alert" th:if="${erro}"
+         th:text="${erro}">Ação recusada.</div>
+
+    <!--
+        #003-RF04 e RN011: a senha temporaria aparece UMA VEZ.
+
+        Ela chega aqui como flash attribute, que vive so ate esta tela ser
+        desenhada. Recarregar a pagina ja nao a mostra, e nao existe tela que
+        a recupere: no banco ficou apenas o hash. Se o Administrador perder a
+        anotacao, o caminho e gerar outra senha.
+    -->
+    <div class="alert alert-warning" role="alert" th:if="${senhaTemporaria}">
+        <h2 class="h6 alert-heading">Anote a senha agora</h2>
+        <p class="mb-2">
+            Entregue estes dados ao funcionário. No primeiro acesso o sistema vai
+            obrigá-lo a criar uma senha só dele.
+        </p>
+        <p class="mb-2">
+            Usuário: <strong th:text="${loginDaSenha}">joao.silva</strong><br>
+            Senha temporária:
+            <strong class="fs-5 font-monospace" th:text="${senhaTemporaria}">ABCD234XYZ</strong>
+        </p>
+        <p class="small mb-0">
+            Esta senha não aparece de novo. Se ela se perder, use
+            <em>Redefinir senha</em> para gerar outra.
+        </p>
+    </div>
+
+    <div class="alert alert-secondary" role="alert" th:if="${usuarios.isEmpty()}">
+        Nenhum usuário cadastrado ainda.
+    </div>
+
+    <!-- table-responsive: no celular a tabela rola de lado em vez de espremer
+         as colunas ate ficarem ilegiveis. -->
+    <div class="table-responsive" th:unless="${usuarios.isEmpty()}">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Funcionário</th>
+                <th scope="col">Usuário</th>
+                <th scope="col">Perfil</th>
+                <th scope="col">Situação</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="usuario : ${usuarios}">
+                <td>
+                    <span th:text="${usuario.nome}">Nome do funcionário</span>
+                    <small class="d-block text-secondary" th:if="${usuario.cargo}"
+                           th:text="${usuario.cargo}">Cargo</small>
+                </td>
+                <td th:text="${usuario.login}">login</td>
+                <!-- O rotulo em portugues vem do proprio enum (Perfil.getRotulo),
+                     entao a tela nunca precisa traduzir ADMINISTRADOR na mao. -->
+                <td th:text="${usuario.perfil.rotulo}">Perfil</td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${usuario.ativo}">Ativo</span>
+                    <span class="badge text-bg-secondary" th:unless="${usuario.ativo}">Inativo</span>
+                    <!-- #001-RN004: conta fechada por cinco senhas erradas
+                         seguidas. A lista "bloqueados" vem do controller e so
+                         traz quem esta bloqueado NESTE momento - bloqueio
+                         vencido ja nao aparece, porque a conta abriu sozinha. -->
+                    <span class="badge text-bg-danger"
+                          th:if="${bloqueados.contains(usuario.id)}">Bloqueada</span>
+                </td>
+                <td>
+                    <!--
+                        AS ACOES SOBRE A CONTA.
+
+                        Cada uma e um FORMULARIO com method="post", e nao um
+                        link: elas mudam dados. Com um link, bastaria outro site
+                        embutir a imagem <img src=".../desativar"> para desligar
+                        um funcionario sem ninguem clicar em nada. O th:action
+                        inclui o token CSRF sozinho.
+
+                        Os botoes aparecem para todo mundo, inclusive quando a
+                        regra vai recusar. E proposital: o Administrador precisa
+                        LER o motivo (#003-RN015) em vez de ficar procurando um
+                        botao que sumiu. Quem barra de verdade e o servidor.
+                    -->
+                    <div class="d-flex flex-wrap gap-1 justify-content-end">
+
+                        <a th:href="@{/usuarios/{id}/editar(id=${usuario.id})}"
+                           class="btn btn-sm btn-outline-primary">Editar</a>
+
+                        <!-- #003-RF05 -->
+                        <form th:action="@{/usuarios/{id}/redefinir-senha(id=${usuario.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                Redefinir senha
+                            </button>
+                        </form>
+
+                        <!-- #003-RF06: so faz sentido para conta bloqueada. -->
+                        <form th:if="${bloqueados.contains(usuario.id)}"
+                              th:action="@{/usuarios/{id}/desbloquear(id=${usuario.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                Desbloquear
+                            </button>
+                        </form>
+
+                        <!-- #003-RF07 e RN010: desativar, nunca excluir. -->
+                        <form th:if="${usuario.ativo}"
+                              th:action="@{/usuarios/{id}/desativar(id=${usuario.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Desativar
+                            </button>
+                        </form>
+                        <form th:unless="${usuario.ativo}"
+                              th:action="@{/usuarios/{id}/ativar(id=${usuario.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                Ativar
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a th:href="@{/painel}" class="btn btn-link px-0">Voltar ao painel</a>
+
+</main>
+
+</body>
+</html>

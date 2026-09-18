@@ -173,8 +173,9 @@ class BloqueioELogoutTests {
 
         MockHttpSession sessaoDoChefe = entrarComo("chefe");
 
-        // a conta aparece na lista de bloqueadas
-        mockMvc.perform(get("/usuarios/bloqueados").session(sessaoDoChefe))
+        // a conta aparece na lista de usuarios, marcada como bloqueada
+        // (ate o card #003 isto era uma tela separada, /usuarios/bloqueados)
+        mockMvc.perform(get("/usuarios").session(sessaoDoChefe))
                 .andExpect(status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
                         .content().string(org.hamcrest.Matchers.containsString("motorista")));
@@ -182,7 +183,7 @@ class BloqueioELogoutTests {
         // o administrador libera
         mockMvc.perform(post("/usuarios/" + idBloqueado + "/desbloquear")
                         .session(sessaoDoChefe).with(csrf()))
-                .andExpect(redirectedUrl("/usuarios/bloqueados"));
+                .andExpect(redirectedUrl("/usuarios"));
 
         Usuario liberado = buscar("motorista");
         assertNull(liberado.getBloqueadoAte());
@@ -193,11 +194,11 @@ class BloqueioELogoutTests {
     }
 
     @Test
-    @DisplayName("Motorista nao alcanca a tela de desbloqueio")
+    @DisplayName("Motorista nao alcanca a tela de usuarios, onde fica o desbloqueio")
     void motoristaNaoDesbloqueia() throws Exception {
         MockHttpSession sessao = entrarComo("motorista");
 
-        mockMvc.perform(get("/usuarios/bloqueados").session(sessao))
+        mockMvc.perform(get("/usuarios").session(sessao))
                 .andExpect(status().isForbidden());
     }
 
