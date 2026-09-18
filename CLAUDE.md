@@ -269,3 +269,26 @@ apresentação, além de manter o sistema depois da faculdade.
   no projeto e deixe que eles escrevam, revisando depois.
 - Aponte quando algo violar uma das regras acima, mesmo que não tenham
   perguntado.
+
+## Manter este arquivo atualizado
+
+**Ao final de qualquer tarefa que mude o sistema, atualize este arquivo antes
+de encerrar**, sem esperar que peçam. Vale para código, para o modelo de dados
+e para decisões que mudem como algo funciona.
+
+O que precisa ficar em dia:
+
+- a seção **Estado atual**: o que passou a existir e o que saiu da lista do que
+  ainda falta
+- os **padrões estabelecidos**, quando a tarefa criar um jeito novo de fazer
+  algo que os próximos cards devem seguir
+- as **armadilhas** que custaram tempo, para ninguém repetir
+- o **modelo de dados**, quando uma coluna ou tabela for criada
+- a contagem de testes, quando mudar
+
+Este é um arquivo de **contexto**, não um changelog: reescreva as seções
+existentes em vez de empilhar histórico, e mantenha o texto enxuto. O histórico
+de quem fez o quê fica nos commits do Git.
+
+Documentação que aponta caminho de arquivo é código disfarçado: se um arquivo
+mudar de lugar, corrija a referência no mesmo commit que o moveu.

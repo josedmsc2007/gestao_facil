@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Anexos')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <h1 class="h4 mb-1">Anexos</h1>
+    <p class="text-secondary">
+        Documentos de <strong th:text="${usuario.nome}">Nome do funcionário</strong>
+        (CNH, contrato, exames). Só administradores desta empresa conseguem abri-los.
+    </p>
+
+    <div class="alert alert-success" role="alert" th:if="${mensagem}"
+         th:text="${mensagem}">Arquivo anexado.</div>
+
+    <!-- #003-RN012: tipo ou tamanho recusado pelo AnexoUsuarioService. -->
+    <div class="alert alert-danger" role="alert" th:if="${erro}"
+         th:text="${erro}">Só é possível anexar arquivos PDF, JPG ou PNG.</div>
+
+    <!--
+        O FORMULARIO DE ENVIO
+
+        enctype="multipart/form-data" e obrigatorio para enviar arquivo. Sem
+        ele, o navegador manda so o NOME do arquivo, e o controller recebe
+        o MultipartFile vazio.
+
+        O accept so filtra o que aparece na janela de escolher arquivo - e uma
+        ajuda, nao uma protecao: da para contorna-lo. A regra de verdade
+        (RN012) e conferida no servidor.
+    -->
+    <form th:action="@{/usuarios/{id}/anexos(id=${usuario.id})}" method="post"
+          enctype="multipart/form-data" class="card card-body mb-4">
+        <label for="arquivo" class="form-label">Novo documento</label>
+        <input type="file" id="arquivo" name="arquivo" class="form-control form-control-lg mb-2"
+               accept=".pdf,.jpg,.jpeg,.png">
+        <div class="form-text mb-3">PDF, JPG ou PNG, com no máximo 5 MB.</div>
+        <div>
+            <button type="submit" class="btn btn-primary">Anexar</button>
+        </div>
+    </form>
+
+    <div class="alert alert-secondary" role="alert" th:if="${anexos.isEmpty()}">
+        Nenhum documento anexado.
+    </div>
+
+    <ul class="list-group mb-4" th:unless="${anexos.isEmpty()}">
+        <li class="list-group-item d-flex flex-wrap gap-2 justify-content-between align-items-center"
+            th:each="anexo : ${anexos}">
+            <div>
+                <!-- O download e um link comum: so LE dados, entao GET e o certo.
+                     Quem confere login e empresa e o controller. -->
+                <a th:href="@{/usuarios/{id}/anexos/{anexoId}(id=${usuario.id},anexoId=${anexo.id})}"
+                   th:text="${anexo.nomeOriginal}">cnh.pdf</a>
+                <!-- Tamanho em KB, arredondado para cima: um arquivo de 300
+                     bytes aparece como 1 KB, e nao como 0 KB. -->
+                <small class="d-block text-secondary"
+                       th:text="|${(anexo.tamanho + 1023) / 1024} KB - enviado em ${#temporals.format(anexo.dataRegistro, 'dd/MM/yyyy HH:mm')}|">
+                    120 KB - enviado em 01/01/2026 10:00
+                </small>
+            </div>
+
+            <!-- Remover altera dados: formulario POST, nunca link. O confirm
+                 evita a remocao por um toque acidental no celular. -->
+            <form th:action="@{/usuarios/{id}/anexos/{anexoId}/remover(id=${usuario.id},anexoId=${anexo.id})}"
+                  method="post" class="m-0"
+                  onsubmit="return confirm('Remover este documento? Esta ação não pode ser desfeita.');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+            </form>
+        </li>
+    </ul>
+
+    <a th:href="@{/usuarios}" class="btn btn-link px-0">Voltar aos usuários</a>
+
+</main>
+
+</body>
+</html>

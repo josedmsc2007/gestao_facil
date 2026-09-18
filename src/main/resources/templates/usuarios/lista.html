@@ -112,6 +112,10 @@
                         <a th:href="@{/usuarios/{id}/editar(id=${usuario.id})}"
                            class="btn btn-sm btn-outline-primary">Editar</a>
 
+                        <!-- #003-RF09: documentos do funcionario. -->
+                        <a th:href="@{/usuarios/{id}/anexos(id=${usuario.id})}"
+                           class="btn btn-sm btn-outline-primary">Anexos</a>
+
                         <!-- #003-RF05 -->
                         <form th:action="@{/usuarios/{id}/redefinir-senha(id=${usuario.id})}"
                               method="post" class="m-0">

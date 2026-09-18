@@ -27,8 +27,17 @@ public interface AnexoUsuarioRepository extends JpaRepository<AnexoUsuario, Long
     List<AnexoUsuario> findByEmpresaIdAndUsuarioIdOrderByDataRegistroDesc(Long empresaId,
                                                                           Long usuarioId);
 
-    /** Um anexo especifico, conferindo a empresa - usado no download e na remocao. */
-    Optional<AnexoUsuario> findByIdAndEmpresaId(Long id, Long empresaId);
+    /**
+     * Um anexo especifico, conferindo a empresa E o funcionario - usado no
+     * download e na remocao.
+     *
+     * O endereco do download e /usuarios/{usuarioId}/anexos/{id}. Conferir so
+     * a empresa deixaria o endereco /usuarios/1/anexos/99 abrir o anexo 99
+     * mesmo que ele fosse do funcionario 2: nao vazaria nada para fora da
+     * empresa, mas a tela de um funcionario mostraria o documento de outro.
+     */
+    Optional<AnexoUsuario> findByIdAndEmpresaIdAndUsuarioId(Long id, Long empresaId,
+                                                            Long usuarioId);
 
     /** Quantos anexos o funcionario tem. Usado pela lista de usuarios. */
     long countByEmpresaIdAndUsuarioId(Long empresaId, Long usuarioId);

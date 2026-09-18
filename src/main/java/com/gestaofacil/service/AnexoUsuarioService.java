@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * As regras dos anexos do funcionario (#003-RF09).
@@ -97,7 +98,7 @@ public class AnexoUsuarioService {
         AnexoUsuario anexo = new AnexoUsuario(
                 empresa,
                 dono,
-                arquivo.getOriginalFilename(),
+                nomeParaExibir(arquivo.getOriginalFilename()),
                 nomeArmazenado,
                 TIPOS_ACEITOS.get(extensao),
                 arquivo.getSize());
@@ -106,15 +107,15 @@ public class AnexoUsuarioService {
     }
 
     /**
-     * Busca um anexo conferindo a empresa (#003-RN013).
+     * Busca um anexo conferindo a empresa e o funcionario (#003-RN013).
      *
-     * E o metodo que o download usa. Um anexo de outra empresa simplesmente
-     * nao e encontrado, e o controller responde 404.
+     * E o metodo que o download usa. Um anexo de outra empresa (ou de outro
+     * funcionario) simplesmente nao e encontrado: o Optional volta vazio e o
+     * controller responde 404.
      */
     @Transactional(readOnly = true)
-    public AnexoUsuario buscarNaEmpresa(Long anexoId, Long empresaId) {
-        return anexoRepository.findByIdAndEmpresaId(anexoId, empresaId)
-                .orElseThrow(() -> new IllegalArgumentException("Anexo não encontrado."));
+    public Optional<AnexoUsuario> buscarNaEmpresa(Long anexoId, Long usuarioId, Long empresaId) {
+        return anexoRepository.findByIdAndEmpresaIdAndUsuarioId(anexoId, empresaId, usuarioId);
     }
 
     /**
@@ -135,8 +136,9 @@ public class AnexoUsuarioService {
      * download daria erro.
      */
     @Transactional
-    public void remover(Long anexoId, Long empresaId) {
-        AnexoUsuario anexo = buscarNaEmpresa(anexoId, empresaId);
+    public void remover(Long anexoId, Long usuarioId, Long empresaId) {
+        AnexoUsuario anexo = buscarNaEmpresa(anexoId, usuarioId, empresaId)
+                .orElseThrow(() -> new IllegalArgumentException("Anexo não encontrado."));
         String nomeArmazenado = anexo.getNomeArmazenado();
 
         anexoRepository.delete(anexo);
@@ -175,5 +177,19 @@ public class AnexoUsuarioService {
         }
 
         return extensao;
+    }
+
+    /**
+     * O nome original, limpo para caber na coluna nome_original.
+     *
+     * Alguns navegadores antigos mandam o caminho inteiro
+     * ("C:\Users\joao\Documentos\cnh.pdf") em vez de so o nome, e um nome
+     * enorme estouraria os 255 caracteres da coluna. Este nome so e usado para
+     * exibir e para sugerir o nome no download - nunca para gravar no disco.
+     */
+    private String nomeParaExibir(String nomeEnviado) {
+        String nome = nomeEnviado.substring(
+                Math.max(nomeEnviado.lastIndexOf('/'), nomeEnviado.lastIndexOf('\\')) + 1);
+        return nome.length() > 255 ? nome.substring(nome.length() - 255) : nome;
     }
 }

@@ -134,8 +134,9 @@ Com a aplicação rodando, em `http://localhost:8080`:
 | `/lancamentos` | Tela inicial do Motorista *(provisória)* |
 | `/usuarios` | Lista de funcionários, com cadastro, edição, redefinição de senha, desbloqueio e ativação *(só Administrador)* |
 | `/usuarios/novo` | Cadastro de funcionário *(só Administrador)* |
+| `/usuarios/{id}/anexos` | Documentos do funcionário: enviar, baixar e remover (PDF, JPG ou PNG, até 5 MB). Os arquivos ficam em `~/gestao-facil-anexos`, fora do projeto *(só Administrador)* |
 
-As quatro últimas só abrem depois do login. Digitar o endereço direto sem estar
+As cinco últimas só abrem depois do login. Digitar o endereço direto sem estar
 logado devolve para a tela de login.
 
 ## Credenciais de teste
