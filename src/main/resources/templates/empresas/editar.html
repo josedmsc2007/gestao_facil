@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Editar empresa')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <h1 class="h4 mb-3">Editar empresa</h1>
+
+            <form th:object="${empresaEdicaoForm}"
+                  th:action="@{/empresas/{id}(id=${empresa.id})}" method="post">
+
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome da empresa</label>
+                    <input type="text" id="nome" th:field="*{nome}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'"
+                           required autofocus>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('nome')}"
+                         th:errors="*{nome}">Erro</div>
+                </div>
+
+                <!--
+                    #002-RN003: o identificador aparece, mas nao e um campo do
+                    formulario - e so texto. Nem "disabled" ele precisa ser: nao
+                    existe <input> para ele, e o EmpresaEdicaoForm nao tem onde
+                    guardar esse valor se alguem o enviar a mao.
+                -->
+                <div class="mb-3">
+                    <span class="form-label d-block">Identificador de acesso</span>
+                    <p class="form-control-plaintext form-control-lg font-monospace py-0"
+                       th:text="|/${empresa.identificador}|">/construtora-silva</p>
+                    <div class="form-text">
+                        Não pode ser alterado: é o atalho já instalado no celular
+                        dos funcionários.
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <label for="rotuloCcSingular" class="form-label">
+                            Centro de custo (singular)
+                        </label>
+                        <input type="text" id="rotuloCcSingular" th:field="*{rotuloCcSingular}"
+                               class="form-control form-control-lg"
+                               th:classappend="${#fields.hasErrors('rotuloCcSingular')} ? 'is-invalid'"
+                               required>
+                        <div class="invalid-feedback"
+                             th:if="${#fields.hasErrors('rotuloCcSingular')}"
+                             th:errors="*{rotuloCcSingular}">Erro</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="rotuloCcPlural" class="form-label">
+                            Centro de custo (plural)
+                        </label>
+                        <input type="text" id="rotuloCcPlural" th:field="*{rotuloCcPlural}"
+                               class="form-control form-control-lg"
+                               th:classappend="${#fields.hasErrors('rotuloCcPlural')} ? 'is-invalid'"
+                               required>
+                        <div class="invalid-feedback"
+                             th:if="${#fields.hasErrors('rotuloCcPlural')}"
+                             th:errors="*{rotuloCcPlural}">Erro</div>
+                    </div>
+                </div>
+
+                <!-- Os rotulos ficam guardados na sessao de quem ja esta logado
+                     (UsuarioAutenticado). Por isso a mudanca aparece para cada
+                     funcionario no proximo login. -->
+                <div class="alert alert-secondary" role="alert">
+                    Mudanças no nome e nos rótulos aparecem para cada funcionário
+                    a partir do próximo login.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Salvar</button>
+                    <a th:href="@{/empresas}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

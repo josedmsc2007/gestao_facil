@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
  * fluxo de autenticacao cabe neste arquivo, de cima a baixo.
  *
  * ORDEM DAS CONFERENCIAS
- * 1. a empresa do endereco existe?
+ * 1. a empresa do endereco existe e esta ativa? (#002-RN013)
  * 2. existe um usuario com esse login DENTRO dessa empresa? (RN007, RN008)
  * 3. esse usuario esta ativo? (RN009)
  * 4. a senha digitada bate com o hash guardado? (RN010)
@@ -84,6 +84,14 @@ public class AutenticacaoPorEmpresaProvider implements AuthenticationProvider {
         // 1. A empresa do endereco existe?
         Empresa empresa = empresaRepository.findByIdentificador(identificadorEmpresa)
                 .orElseThrow(() -> new BadCredentialsException(MENSAGEM_GENERICA));
+
+        //    #002-RN013 - empresa inativa nao aceita login, nem com usuario e
+        //    senha corretos. A mensagem e a generica de sempre (#001-RF04), e
+        //    a conferencia vem antes da senha: assim a tentativa nem conta
+        //    para o bloqueio da RN004.
+        if (!empresa.isAtiva()) {
+            throw new BadCredentialsException(MENSAGEM_GENERICA);
+        }
 
         // 2. O usuario existe DENTRO dessa empresa?
         //    Este e o ponto que garante a RN008: o mesmo login em outra

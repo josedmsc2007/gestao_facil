@@ -135,27 +135,42 @@ Com a aplicação rodando, em `http://localhost:8080`:
 | `/usuarios` | Lista de funcionários, com cadastro, edição, redefinição de senha, desbloqueio e ativação *(só Administrador)* |
 | `/usuarios/novo` | Cadastro de funcionário *(só Administrador)* |
 | `/usuarios/{id}/anexos` | Documentos do funcionário: enviar, baixar e remover (PDF, JPG ou PNG, até 5 MB). Os arquivos ficam em `~/gestao-facil-anexos`, fora do projeto *(só Administrador)* |
+| `/gestao-facil` | **Atalho da equipe do sistema**: login dos Operadores |
+| `/empresas` | Empresas clientes: cadastro, edição, inativação e nova senha para administrador *(só Operador)* |
+| `/empresas/nova` | Cadastro de empresa com os seus dois administradores *(só Operador)* |
 
-As cinco últimas só abrem depois do login. Digitar o endereço direto sem estar
-logado devolve para a tela de login.
+As telas de `/painel` em diante só abrem depois do login. Digitar o endereço
+direto sem estar logado devolve para a tela de login.
 
 ## Credenciais de teste
 
-A aplicação cria sozinha, na primeira execução, uma empresa e um administrador
-de exemplo — sem eles não haveria como fazer o primeiro login, já que só um
-administrador logado pode cadastrar usuários.
+A aplicação cria sozinha, na primeira execução, os usuários de exemplo — sem
+eles não haveria como fazer o primeiro login, já que todo cadastro exige
+alguém logado.
+
+**Empresa de demonstração** — para as telas do dia a dia:
 
 | | |
 |---|---|
-| Empresa | `construtora-teste` (Construtora Teste) |
+| Endereço | `/construtora-teste` (Construtora Teste) |
 | Usuário | `admin` |
 | Senha | `admin12345` |
 
+**Equipe do sistema** — três Operadores, um por integrante, que cadastram as
+empresas clientes:
+
+| | |
+|---|---|
+| Endereço | `/gestao-facil` |
+| Usuários | `jose.lopes`, `victor.ruan`, `leonardo.silva` |
+| Senha | `operador12345` — cada um é obrigado a trocá-la no primeiro acesso |
+
 > **Estas credenciais servem apenas para desenvolvimento e demonstração.**
-> A senha está em texto legível no `application.properties`, que é versionado —
-> qualquer pessoa com acesso ao repositório a conhece. Antes de qualquer uso
-> real, a carga inicial deve ser desligada (`seed.habilitado=false`) e o
-> administrador de verdade cadastrado com uma senha própria.
+> As senhas estão em texto legível no `application.properties`, que é
+> versionado — qualquer pessoa com acesso ao repositório as conhece. Antes de
+> qualquer uso real, a carga inicial deve ser desligada
+> (`seed.habilitado=false`). Ainda não existe outra forma de criar os
+> Operadores em produção.
 
 No banco a senha é gravada em **hash BCrypt**, nunca em texto legível. Se
 consultar a tabela `usuario` no pgAdmin, a coluna `senha` mostra algo como
@@ -190,7 +205,8 @@ GESTAO_FACIL/
 .\mvnw.cmd test
 ```
 
-São 36 testes automatizados cobrindo o login: isolamento entre empresas, senha
-temporária, bloqueio por tentativas inválidas e encerramento de sessão. Eles
+São 141 testes automatizados cobrindo o login (isolamento entre empresas, senha
+temporária, bloqueio por tentativas, encerramento de sessão), o cadastro de
+usuários e anexos, e o cadastro de empresas com o perfil Operador. Eles
 rodam num banco H2 em memória, então **não** precisam do PostgreSQL no ar nem
 do `application-local.properties` configurado.

@@ -12,7 +12,18 @@ import java.util.List;
  */
 public enum Perfil {
 
-    /** Cadastra empresa, veiculos, centros de custo e usuarios; ve relatorios. */
+    /**
+     * Equipe responsavel pelo sistema (#002-RF01). Cadastra as empresas
+     * clientes e os administradores iniciais de cada uma, e gera nova senha
+     * para um administrador que perdeu o acesso (#002-RF08).
+     *
+     * NAO ve dados operacionais de empresa nenhuma (#002-RN008) e mora na
+     * empresa reservada da equipe (#002-RN010). Nao e atribuivel por nenhuma
+     * tela da empresa - veja atribuiveisPelaEmpresa(), abaixo.
+     */
+    OPERADOR("Operador"),
+
+    /** Cadastra veiculos, centros de custo e usuarios da empresa; ve relatorios. */
     ADMINISTRADOR("Administrador"),
 
     /** Registra saida, devolucao e abastecimento dos veiculos que utiliza. */
@@ -34,9 +45,8 @@ public enum Perfil {
      * (#003-RN007).
      *
      * ================== NAO TROQUE ISTO POR values() ==================
-     * A tentacao e escrever "return List.of(values())", que hoje daria no
-     * mesmo. Mas o card #002 acrescenta o perfil OPERADOR, usado so pela
-     * equipe do sistema - e naquele dia o values() faria o OPERADOR aparecer
+     * A tentacao e escrever "return List.of(values())". Mas values() inclui
+     * o OPERADOR, usado so pela equipe do sistema (#002): ele apareceria
      * sozinho na caixa de selecao da tela de usuarios, sem ninguem ter
      * pedido, e a RN007 seria quebrada em silencio.
      *

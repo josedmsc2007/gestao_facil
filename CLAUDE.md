@@ -21,42 +21,64 @@ e ao professor — não os edite.
 
 ## Estado atual
 
-**Pronto — cards #001 (login) e #001.1 (melhorias do login), com 57 testes:**
+**Pronto: cards #001, #001.1, #003 e #002, com 141 testes.** O #002 foi
+feito depois do #003, fora da ordem dos números.
 
-- autenticação com isolamento por empresa, bloqueio por tentativas e logout
-- telas de login, troca obrigatória de senha e contas bloqueadas
-- aviso de tentativas restantes a partir da 3ª falha (#001.1-RF02)
-- atalhos de empresa na tela `/login` (#001.1-RF01)
-- entidades `Empresa` e `Usuario` com seus repositórios
-- carga inicial (`config/CargaInicial`): empresa `construtora-teste`,
-  usuário `admin`, senha `admin12345`
+- **#001 e #001.1, login:** autenticação com isolamento por empresa, bloqueio
+  por tentativas, logout, troca obrigatória de senha, aviso de tentativas
+  restantes e atalhos de empresa na tela `/login`
+- **#003, usuários** (`/usuarios`, só Administrador): cadastro e edição com
+  CPF validado, CNH obrigatória para Motorista, senha temporária exibida uma
+  vez, redefinição de senha, desbloqueio, ativação e desativação, e a regra dos
+  dois administradores ativos (#003-RN015). Anexos do funcionário
+  (`/usuarios/{id}/anexos`): PDF, JPG e PNG de até 5 MB, gravados fora do
+  projeto (`gestao-facil.anexos.diretorio`). A antiga `/usuarios/bloqueados`
+  virou o botão Desbloquear da lista
+- **#002, empresas** (`/empresas`, só Operador): perfil `OPERADOR`; cadastro
+  de empresa já com os dois administradores; sugestão do identificador a partir
+  do nome; edição de nome e rótulos (o identificador não muda); inativação, que
+  barra o login de todos os usuários da empresa; nova senha para Administrador
+  (`/empresas/{id}/administradores`)
+- **Carga inicial** (`config/CargaInicial`), em duas etapas independentes:
+  - empresa reservada `gestao-facil` com três Operadores (`jose.lopes`,
+    `victor.ruan`, `leonardo.silva`, senha `operador12345`, com troca
+    obrigatória no primeiro acesso)
+  - empresa `construtora-teste` com o usuário `admin`, senha `admin12345`.
+    Ela nasce com **um** administrador só, exceção que a tela do #002 não
+    permite
 
 **Ainda não existe:**
 
-- as outras sete entidades e seus CRUDs (veículo, centro de custo, uso,
-  abastecimento, manutenção, anexos)
-- upload e download de anexos
+- as entidades e CRUDs de veículo, centro de custo, uso, abastecimento,
+  manutenção e anexo de manutenção
 - relatórios (RF09)
-- geração de senha temporária pelo Administrador (#001-RF06) — o campo
-  `senha_temporaria` e todo o fluxo de troca já existem, falta a tela que
-  gera a senha, que virá junto com o CRUD de usuários
-- cadastro de empresa (RF02) — hoje só o seed cria empresa
+- forma de criar os Operadores em produção: hoje só a carga inicial os cria,
+  e ela é desligada em produção (`seed.habilitado=false`)
+- derrubar a sessão de quem já está logado quando a empresa é inativada. A
+  inativação barra o **próximo** login e não a sessão aberta
 
 **Provisório, será substituído pelos próximos cards:** as telas `/painel`
 (administrador) e `/lancamentos` (motorista), que existem só para o
-redirecionamento por perfil ter destino, e `/usuarios/bloqueados`, que migra
-para o CRUD de usuários.
+redirecionamento por perfil ter destino.
+
+**Divergência a resolver com o PO:** `docs/requisitos.md` (v1.2) ainda diz que
+"qualquer Administrador pode cadastrar empresa". Os cards #002 e #003 citam a
+versão 1.3, em que só o Operador cadastra. O código segue os cards.
 
 ## Regras que o código precisa garantir
 
 1. **Isolamento por empresa (multi-tenant).** Toda consulta filtra pela empresa
    do usuário logado. Não basta esconder o botão na tela: buscar por id sempre
    confere se o registro pertence à empresa do usuário. Acessar
-   `/veiculos/57` de outra empresa deve falhar.
+   `/veiculos/57` de outra empresa deve falhar. **Única exceção:** as telas
+   `/empresas` do Operador, que por definição mexem em outras empresas. Elas
+   têm um limite próprio: nunca alcançam a empresa reservada nem dado
+   operacional (ver "O perfil Operador" abaixo).
 2. **Status do veículo é calculado, nunca digitado.** Saída sem devolução →
    EM_USO; devolução → DISPONIVEL; manutenção EM_ANDAMENTO → EM_MANUTENCAO.
    Só o Administrador altera para INATIVO manualmente.
-3. **Nada é apagado.** Veículo, usuário e centro de custo usam o campo `ativo`.
+3. **Nada é apagado.** Veículo, usuário e centro de custo usam o campo `ativo`;
+   empresa usa `ativa`.
    Exclusão física quebraria os lançamentos históricos e os relatórios.
 4. **Data informada ≠ data de registro.** Os lançamentos aceitam data
    retroativa, então cada um guarda também `data_registro`, preenchido pelo
@@ -76,19 +98,31 @@ Toda tabela, exceto `empresa`, tem `empresa_id`. O detalhamento dos campos está
 em `Modelo_de_Dados_Gestao_Facil.pdf` (atenção: o PDF usa fontes embutidas e
 não é legível por extração automática de texto).
 
-O card #001 acrescentou três colunas em `usuario`:
+Existem hoje `empresa`, `usuario` e `anexo_usuario`. Colunas acrescentadas
+pelos cards:
 
-| Coluna | Para quê | Origem |
-|---|---|---|
-| `tentativas_invalidas` | RN004 — erros consecutivos; zera ao acertar | previsto no card |
-| `bloqueado_ate` | RN004/RN005 — nulo quando a conta está liberada | previsto no card |
-| `senha_temporaria` | RF07 — força a troca no primeiro acesso | decidido na implementação |
+| Tabela | Coluna | Para quê | Card |
+|---|---|---|---|
+| `usuario` | `tentativas_invalidas`, `bloqueado_ate` | bloqueio por tentativas (RN004/RN005) | #001 |
+| `usuario` | `senha_temporaria` | força a troca no primeiro acesso (RF07); decidido na implementação | #001 |
+| `usuario` | `cargo`, `cpf` | cadastro do funcionário; CPF só com números | #003 |
+| `usuario` | `cnh`, `categoria_cnh`, `validade_cnh` | habilitação, obrigatória só para Motorista | #003 |
+| `empresa` | `ativa` | empresa inativa não aceita login (#002-RN013) | #002 |
+| `empresa` | `data_cadastro`, `cadastrada_por_id` | histórico: qual Operador cadastrou e quando. Nulos nas empresas da carga | #002 |
 
-O par `(empresa_id, login)` tem restrição única no banco, não só na tela (RN007).
+As três colunas de `empresa` **não estavam no card #002**, que diz "nenhuma
+coluna nova é necessária". Sem elas, porém, não haveria como atender a RF06
+(inativar) nem o critério do histórico. Confirmem com o PO.
+
+Restrições únicas no banco, não só na tela: `(empresa_id, login)` e
+`(empresa_id, cpf)` em `usuario`; `identificador` em `empresa`.
+
+`usuario.perfil` aceita `OPERADOR`, `ADMINISTRADOR` e `MOTORISTA`, gravados
+como texto.
 
 **Confiram `Empresa` e `Usuario` contra o PDF.** Como ele não é legível por
 extração automática, os campos das duas entidades foram deduzidos do
-`requisitos.md` e do card #001, e podem estar incompletos.
+`requisitos.md` e dos cards, e podem estar incompletos.
 
 ## Convenções
 
@@ -101,9 +135,11 @@ extração automática, os campos das duas entidades foram deduzidos do
 - Templates Thymeleaf em `src/main/resources/templates/<entidade>/`
 - Textos de tela em português
 
-## Padrões estabelecidos no card #001
+## Padrões estabelecidos
 
-Os próximos CRUDs devem seguir estes padrões.
+Criados nos cards #001, #003 e #002. Os próximos CRUDs devem segui-los. O CRUD
+de referência é o de usuários (`UsuarioController`, `UsuarioService`,
+`UsuarioForm`, `templates/usuarios/`).
 
 ### A empresa na autenticação
 
@@ -185,35 +221,70 @@ vier vazio — 403 confirmaria que aquele id existe em algum lugar.
 
 ### Rotas e segurança
 
-URLs internas **não** levam a empresa (`/painel`, `/usuarios/bloqueados`): o
-isolamento vem da sessão, não do endereço. Mapeamentos exatos têm prioridade
-sobre o atalho `/{identificador}`, então uma rota nova como `/veiculos` não
-conflita.
+URLs internas **não** levam a empresa (`/painel`, `/usuarios`): o isolamento
+vem da sessão, não do endereço. Mapeamentos exatos têm prioridade sobre o
+atalho `/{identificador}`, então uma rota nova como `/veiculos` não conflita.
+Mesmo assim, **acrescente o nome de toda rota nova de primeiro nível em
+`EmpresaService.IDENTIFICADORES_PROIBIDOS`**: sem isso, uma empresa poderia ser
+cadastrada com esse identificador e o atalho dela abriria a sua tela.
 
-Em `SecurityConfig`, `anyRequest().authenticated()` já protege qualquer rota
-nova. Acrescente uma regra só quando a tela for de um perfil específico:
+`SecurityConfig` é **fechado por padrão** desde o #002: a última linha é
+`anyRequest().hasAnyRole("ADMINISTRADOR", "MOTORISTA")`. Toda rota nova já
+nasce protegida contra visitante **e** contra o Operador (#002-RN008), sem
+linha nova. Acrescente uma regra só quando a tela for de um perfil só:
 
 ```java
 .requestMatchers("/veiculos/**").hasRole("ADMINISTRADOR")
 ```
 
+Tela que o Operador também precise abrir vai na lista explícita de
+`.authenticated()` do `SecurityConfig`, hoje com `/`, `/trocar-senha`, `/error`
+e `/gestao-facil`.
+
 CSRF está ligado. Toda ação que altera dados é `POST` com `th:action` — nunca
 um link.
 
+### O perfil Operador (#002)
+
+- É um usuário comum com `perfil = OPERADOR`, que pertence à empresa reservada
+  `Empresa.IDENTIFICADOR_DA_EQUIPE` (`gestao-facil`) e entra por
+  `/gestao-facil/login`. Depois do login, o `InicioController` o manda para
+  `/empresas`.
+- Ele **não** é atribuível por tela nenhuma da empresa. A caixa de perfis vem
+  de `Perfil.atribuiveisPelaEmpresa()`, nunca de `Perfil.values()`, e o
+  `UsuarioController` confere de novo no POST.
+- A empresa reservada fica fora de todas as telas do Operador: listagem e
+  busca por id usam `findByIdentificadorNot...` / `findByIdAndIdentificadorNot`,
+  com 404, o mesmo papel do `findByIdAndEmpresaId`.
+- Das empresas clientes o Operador vê o cadastro e os **administradores**
+  ativos. Motorista nem sai do banco: o perfil vai dentro da consulta.
+- `InicioController` decide o destino com um `switch` sem `default` sobre o
+  `Perfil`. Perfil novo no enum não compila até ganhar um destino ali.
+
 ### Telas
 
-**Não existe layout base ainda.** Existem apenas os fragmentos
-`templates/fragmentos/barra.html` (barra do topo com o botão Sair, que também
-grava o atalho de empresa) e `fragmentos/atalhos-empresa.html`. A barra entra
-assim nas telas internas:
+O `<head>` de todas as telas está em `fragmentos/layout.html`, criado no #003.
+Um layout completo, com corpo embrulhado, foi descartado de propósito: o
+motivo está no comentário do arquivo. Toda tela interna começa assim:
 
 ```html
+<head th:replace="~{fragmentos/layout :: cabeca('Usuários')}"></head>
+...
 <nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
 ```
 
-O `<head>` com o CDN do Bootstrap está **repetido** nas cinco telas. JavaScript
-próprio vai em `static/js/`, rota já liberada no `SecurityConfig`. Antes do
-próximo CRUD, decidam se criam um layout base — a duplicação vai se multiplicar.
+A barra (`fragmentos/barra.html`) tem o botão Sair e grava o atalho de empresa.
+JavaScript próprio vai em `static/js/`, rota já liberada no `SecurityConfig`.
+
+Senha gerada pelo sistema (cadastro de usuário, redefinição, cadastro de
+empresa) aparece **uma vez**, por flash attribute, numa caixa `alert-warning`
+na tela para onde o POST redireciona. No banco fica só o hash, e a senha
+sai de `GeradorDeSenhaTemporaria`.
+
+Um formulário por finalidade: se edição e cadastro têm campos diferentes, são
+duas classes (`EmpresaEdicaoForm` e `EmpresaForm`, esta herdando da outra). O
+campo que não pode mudar (identificador, empresa) **não existe** na classe da
+edição. Não basta estar escondido na tela.
 
 Telas pensadas para motorista no celular: campos `form-control-lg`, botões
 grandes, poucos elementos. Três detalhes que já resolveram problemas reais e
@@ -231,6 +302,7 @@ Três formatos, todos com `alert` do Bootstrap:
 | Erro vindo de um redirecionamento | parâmetro na URL: `th:if="${param.erro != null}"` |
 | Erro de validação de campo | `BindingResult` + `th:errors="*{campo}"` e `is-invalid` |
 | Confirmação após ação | `RedirectAttributes.addFlashAttribute("mensagem", ...)` |
+| Ação recusada por regra de negócio | `addFlashAttribute("erro", ...)`, explicando o motivo e o que fazer |
 
 Mensagem de login incorreto é **genérica** (#001-RF04) e vive numa constante no
 provider — nunca diga qual campo está errado. A única exceção deliberada é a
@@ -245,7 +317,25 @@ criando os próprios dados num `@BeforeEach` — nunca dependendo do seed nem de
 outro teste. Rodam em H2, então não precisam de PostgreSQL no ar.
 
 Todo CRUD novo precisa de pelo menos um teste que prove o isolamento por
-empresa: um usuário da empresa A não alcança registro da empresa B.
+empresa: um usuário da empresa A não alcança registro da empresa B. E, desde o
+#002, um que prove que o Operador leva 403 na tela nova.
+
+### Armadilhas que já custaram tempo
+
+- **Coluna `NOT NULL` nova em tabela que já tem dados** (`ddl-auto=update`):
+  o PostgreSQL recusa o `alter table` e o Hibernate só escreve o erro no
+  console e segue em frente. O sistema quebra depois, longe da causa. Use
+  `@ColumnDefault(...)` (ver `Empresa.ativa`). No H2 dos testes o problema não
+  aparece, porque lá o banco nasce vazio.
+- **O `application.properties` dos testes substitui o principal**, porque tem o
+  mesmo nome. Propriedade nova que um teste precise tem de ir nele ou no
+  `@SpringBootTest(properties = ...)`.
+- **Teste que liga a carga inicial usa banco próprio** (`CargaInicialTests`,
+  com outra `spring.datasource.url`). Sem isso, o que a carga grava fica no H2
+  compartilhado e esbarra nos dados dos outros testes.
+- **Carga inicial:** cada etapa confere sozinha o que já existe. Uma
+  conferência única do tipo "a empresa de teste existe? então pare" impediria
+  que dados novos, como os Operadores, chegassem a bancos já criados.
 
 ## Como rodar
 
@@ -254,7 +344,8 @@ Cada integrante copia `application-local.properties.exemplo` para
 PostgreSQL. O banco `gestao_facil` precisa existir antes.
 
 ```
-.\mvnw.cmd spring-boot:run     # http://localhost:8080/construtora-teste
+.\mvnw.cmd spring-boot:run     # http://localhost:8080/construtora-teste  (admin)
+                               # http://localhost:8080/gestao-facil       (Operadores)
 .\mvnw.cmd test
 ```
 

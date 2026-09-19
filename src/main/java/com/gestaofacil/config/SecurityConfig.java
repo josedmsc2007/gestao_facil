@@ -1,5 +1,6 @@
 package com.gestaofacil.config;
 
+import com.gestaofacil.model.Empresa;
 import com.gestaofacil.security.AutenticacaoFalhaHandler;
 import com.gestaofacil.security.AutenticacaoSucessoHandler;
 import com.gestaofacil.security.EntradaNoLoginPorEmpresa;
@@ -71,6 +72,18 @@ public class SecurityConfig {
                         // o caminho de excecao, sem empresa no endereco.
                         .requestMatchers("/login", "/*/login").permitAll()
 
+                        // Telas de TODOS os perfis, inclusive o Operador:
+                        // a porta de entrada que distribui por perfil, a
+                        // troca de senha obrigatoria (RF07), a pagina de erro
+                        // do Spring (sem ela, um 404 do Operador virava 403)
+                        // e o atalho da empresa da equipe, que e o que os
+                        // Operadores poem na tela inicial do celular.
+                        .requestMatchers("/", "/trocar-senha", "/error",
+                                "/" + Empresa.IDENTIFICADOR_DA_EQUIPE).authenticated()
+
+                        // #002-RN007: cadastro de empresas, so o Operador.
+                        .requestMatchers("/empresas/**").hasRole("OPERADOR")
+
                         // Regras por perfil (RN006). Cada tela inicial so
                         // abre para o perfil a que pertence. Se um motorista
                         // digitar /painel na barra de enderecos, leva 403.
@@ -81,10 +94,20 @@ public class SecurityConfig {
                         // desbloqueio de contas (RN005).
                         .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
 
-                        // Todo o resto exige estar logado. Esta linha e a que
-                        // sustenta o criterio "sistema impede acesso de
-                        // usuarios nao cadastrados".
-                        .anyRequest().authenticated())
+                        // Todo o resto: so os perfis DA EMPRESA.
+                        //
+                        // Ate o card #002 esta linha era
+                        // .anyRequest().authenticated(). Com o Operador isso
+                        // deixou de servir: toda tela nova (/veiculos,
+                        // /abastecimentos...) abriria tambem para ele, e a
+                        // #002-RN008 diz que o Operador nao ve dado
+                        // operacional nenhum. Agora a regra e "fechado por
+                        // padrao": tela nova nasce proibida ao Operador sem
+                        // ninguem precisar lembrar disso. Continua valendo
+                        // tambem o criterio "sistema impede acesso de
+                        // usuarios nao cadastrados": quem nao esta logado nao
+                        // tem perfil nenhum.
+                        .anyRequest().hasAnyRole("ADMINISTRADOR", "MOTORISTA"))
 
                 .formLogin(formulario -> formulario
                         // Tela de login. Na pratica quem escolhe o destino de

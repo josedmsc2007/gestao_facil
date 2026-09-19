@@ -2,10 +2,16 @@ package com.gestaofacil.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnDefault;
+
+import java.time.LocalDateTime;
 
 /**
  * Empresa que usa o sistema (RF02).
@@ -17,6 +23,19 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "empresa")
 public class Empresa {
+
+    /**
+     * Identificador da empresa reservada da equipe do sistema (#002-RN010).
+     *
+     * Ela nao e uma construtora cliente: existe so porque todo usuario precisa
+     * de uma empresa, e o Operador tambem e um usuario. Os Operadores entram
+     * por /gestao-facil/login.
+     *
+     * E uma constante, e nao uma coluna, porque existe UMA empresa assim no
+     * sistema inteiro e ela nunca muda. A listagem, a edicao e a recuperacao
+     * de acesso usam esta constante para deixa-la de fora.
+     */
+    public static final String IDENTIFICADOR_DA_EQUIPE = "gestao-facil";
 
     /**
      * Chave primaria. IDENTITY significa que quem gera o numero e o proprio
@@ -55,6 +74,43 @@ public class Empresa {
     /** O mesmo rotulo no plural. Ex.: "Obras". Usado em titulos e menus. */
     @Column(name = "rotulo_cc_plural", nullable = false, length = 40)
     private String rotuloCcPlural;
+
+    /**
+     * #002-RF06 e RN013: empresa inativa nao aceita login de nenhum usuario.
+     * Regra 3 do projeto: empresa tambem nao e apagada, so desligada.
+     *
+     * ARMADILHA - POR QUE O @ColumnDefault
+     * Sem ele, o ddl-auto=update mandaria ao PostgreSQL de voces
+     * "alter table empresa add column ativa boolean not null", e o banco
+     * recusa: a construtora-teste, que ja existe, ficaria com a coluna vazia.
+     * O Hibernate so escreve o erro no console e segue em frente, e o sistema
+     * quebra depois, longe da causa. Com o default o comando vira
+     * "... boolean default true not null" e as linhas antigas nascem ativas.
+     * Vale para TODA coluna NOT NULL acrescentada a tabela que ja tem dados.
+     */
+    @ColumnDefault("true")
+    @Column(nullable = false)
+    private boolean ativa = true;
+
+    /**
+     * Quando a empresa foi cadastrada pela tela (#002). Nulo nas empresas da
+     * carga inicial, que nao passaram por ela.
+     */
+    @Column(name = "data_cadastro")
+    private LocalDateTime dataCadastro;
+
+    /**
+     * Qual Operador cadastrou a empresa - o "historico" pedido pelo card #002.
+     * E por isso que as contas de Operador sao nominais (#002-RN011): uma
+     * conta compartilhada nao diria quem foi.
+     *
+     * Aponta para um Usuario da empresa reservada. Nulo nas empresas da carga
+     * inicial. LAZY: so a listagem de empresas precisa dele, e ela o pede
+     * explicitamente (veja o @EntityGraph no EmpresaRepository).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cadastrada_por_id")
+    private Usuario cadastradaPor;
 
     /**
      * O JPA exige um construtor sem argumentos para conseguir criar o objeto
@@ -110,5 +166,34 @@ public class Empresa {
 
     public void setRotuloCcPlural(String rotuloCcPlural) {
         this.rotuloCcPlural = rotuloCcPlural;
+    }
+
+    public boolean isAtiva() {
+        return ativa;
+    }
+
+    public void setAtiva(boolean ativa) {
+        this.ativa = ativa;
+    }
+
+    /** true para a empresa reservada da equipe (#002-RN010). */
+    public boolean isDaEquipe() {
+        return IDENTIFICADOR_DA_EQUIPE.equals(identificador);
+    }
+
+    public LocalDateTime getDataCadastro() {
+        return dataCadastro;
+    }
+
+    public void setDataCadastro(LocalDateTime dataCadastro) {
+        this.dataCadastro = dataCadastro;
+    }
+
+    public Usuario getCadastradaPor() {
+        return cadastradaPor;
+    }
+
+    public void setCadastradaPor(Usuario cadastradaPor) {
+        this.cadastradaPor = cadastradaPor;
     }
 }

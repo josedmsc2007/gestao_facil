@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Administradores')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <h1 class="h4 mb-1">Administradores</h1>
+    <p class="text-secondary">
+        de <strong th:text="${empresa.nome}">Empresa</strong>. Use esta tela quando a
+        empresa perder o acesso aos administradores: a nova senha temporária
+        também libera a conta, se estiver bloqueada.
+    </p>
+
+    <div class="alert alert-success" role="alert" th:if="${mensagem}"
+         th:text="${mensagem}">Nova senha gerada.</div>
+
+    <!-- #002-RF08: a senha aparece uma vez, como no cadastro de usuarios. -->
+    <div class="alert alert-warning" role="alert" th:if="${senhaTemporaria}">
+        <h2 class="h6 alert-heading">Anote a senha agora</h2>
+        <p class="mb-2">
+            Endereço: <strong class="font-monospace"
+                              th:text="|/${empresa.identificador}|">/empresa</strong><br>
+            Usuário: <strong th:text="${loginDaSenha}">login</strong><br>
+            Senha temporária:
+            <strong class="fs-5 font-monospace" th:text="${senhaTemporaria}">ABCD234XYZ</strong>
+        </p>
+        <p class="small mb-0">
+            No primeiro acesso o sistema obriga a troca. Esta senha não aparece de novo.
+        </p>
+    </div>
+
+    <!--
+        #002-RN008: SO administradores. Os motoristas e o resto dos dados da
+        empresa nao aparecem aqui - nem saem do banco, porque o perfil vai
+        dentro da consulta.
+    -->
+    <div class="alert alert-secondary" role="alert" th:if="${administradores.isEmpty()}">
+        Nenhum administrador ativo.
+    </div>
+
+    <div class="table-responsive" th:unless="${administradores.isEmpty()}">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">Usuário</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="administrador : ${administradores}">
+                <td th:text="${administrador.nome}">Nome</td>
+                <td th:text="${administrador.login}">login</td>
+                <td class="text-end">
+                    <form th:action="@{/empresas/{id}/administradores/{usuarioId}/redefinir-senha(id=${empresa.id}, usuarioId=${administrador.id})}"
+                          method="post" class="m-0">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            Gerar nova senha
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a th:href="@{/empresas}" class="btn btn-link px-0">Voltar às empresas</a>
+
+</main>
+
+</body>
+</html>

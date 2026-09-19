@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Empresas')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Empresas</h1>
+        <a th:href="@{/empresas/nova}" class="btn btn-primary">Nova empresa</a>
+    </div>
+
+    <p class="text-secondary">
+        Olá, <strong th:text="${logado.nome}">Nome</strong>. Aqui ficam as empresas
+        clientes do sistema. O Operador cuida do cadastro delas e do acesso dos
+        administradores, e não vê os dados do dia a dia de nenhuma.
+    </p>
+
+    <div class="alert alert-success" role="alert" th:if="${mensagem}"
+         th:text="${mensagem}">Empresa cadastrada.</div>
+
+    <!--
+        #002-RF05: as senhas dos dois administradores aparecem UMA VEZ.
+
+        Mesmo mecanismo do cadastro de usuarios: flash attribute, que vive so
+        ate esta tela ser desenhada. No banco ficou so o hash. Se a anotacao
+        se perder, o caminho e "Administradores" > "Gerar nova senha".
+    -->
+    <div class="alert alert-warning" role="alert" th:if="${administradoresCriados}">
+        <h2 class="h6 alert-heading">Anote os acessos agora</h2>
+        <p class="mb-2">
+            Entregue estes dados aos dois administradores. No primeiro acesso o
+            sistema vai obrigar cada um a criar uma senha só dele.
+        </p>
+        <p class="mb-2">
+            Endereço de acesso:
+            <strong class="font-monospace"
+                    th:text="|/${identificadorCriado}|">/construtora-silva</strong>
+        </p>
+        <ul class="mb-2">
+            <li th:each="administrador : ${administradoresCriados}">
+                <span th:text="${administrador.nome}">Nome</span> —
+                usuário <strong th:text="${administrador.login}">login</strong>,
+                senha temporária
+                <strong class="font-monospace"
+                        th:text="${administrador.senha}">ABCD234XYZ</strong>
+            </li>
+        </ul>
+        <p class="small mb-0">Estas senhas não aparecem de novo.</p>
+    </div>
+
+    <div class="alert alert-secondary" role="alert" th:if="${empresas.isEmpty()}">
+        Nenhuma empresa cadastrada ainda.
+    </div>
+
+    <div class="table-responsive" th:unless="${empresas.isEmpty()}">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Empresa</th>
+                <th scope="col">Endereço</th>
+                <th scope="col">Situação</th>
+                <th scope="col">Cadastrada</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="empresa : ${empresas}">
+                <td>
+                    <span th:text="${empresa.nome}">Nome da empresa</span>
+                    <!-- #002-RF04: o rotulo que as telas desta empresa usam. -->
+                    <small class="d-block text-secondary"
+                           th:text="|Centro de custo: ${empresa.rotuloCcSingular} / ${empresa.rotuloCcPlural}|">
+                        Centro de custo: Obra / Obras
+                    </small>
+                </td>
+                <td class="font-monospace" th:text="|/${empresa.identificador}|">/identificador</td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${empresa.ativa}">Ativa</span>
+                    <span class="badge text-bg-secondary" th:unless="${empresa.ativa}">Inativa</span>
+                </td>
+                <!-- O historico: quem cadastrou e quando. As empresas da carga
+                     inicial nao passaram pela tela e ficam sem registro. -->
+                <td class="small">
+                    <span th:if="${empresa.cadastradaPor}">
+                        <span th:text="${#temporals.format(empresa.dataCadastro, 'dd/MM/yyyy')}">01/01/2026</span>
+                        por <span th:text="${empresa.cadastradaPor.nome}">Operador</span>
+                    </span>
+                    <span class="text-secondary" th:unless="${empresa.cadastradaPor}">
+                        carga inicial
+                    </span>
+                </td>
+                <td>
+                    <div class="d-flex flex-wrap gap-1 justify-content-end">
+                        <a th:href="@{/empresas/{id}/editar(id=${empresa.id})}"
+                           class="btn btn-sm btn-outline-primary">Editar</a>
+
+                        <!-- #002-RF08: recuperacao de acesso. -->
+                        <a th:href="@{/empresas/{id}/administradores(id=${empresa.id})}"
+                           class="btn btn-sm btn-outline-secondary">Administradores</a>
+
+                        <!-- #002-RF06: POST, nunca link. -->
+                        <form th:if="${empresa.ativa}"
+                              th:action="@{/empresas/{id}/inativar(id=${empresa.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Inativar
+                            </button>
+                        </form>
+                        <form th:unless="${empresa.ativa}"
+                              th:action="@{/empresas/{id}/ativar(id=${empresa.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                Ativar
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</main>
+
+</body>
+</html>

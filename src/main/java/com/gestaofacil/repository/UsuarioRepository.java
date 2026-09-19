@@ -83,6 +83,15 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     long countByEmpresaIdAndPerfilAndAtivoTrue(Long empresaId, Perfil perfil);
 
     /**
+     * Os usuarios ativos de um perfil so, dentro de uma empresa.
+     *
+     * Usado pelo Operador para ver os administradores de uma empresa cliente
+     * (#002-RF08). Repare que o perfil vai NA CONSULTA: os motoristas nem
+     * saem do banco, porque o Operador nao pode ve-los (#002-RN008).
+     */
+    List<Usuario> findByEmpresaIdAndPerfilAndAtivoTrueOrderByNome(Long empresaId, Perfil perfil);
+
+    /**
      * Usuarios da empresa com bloqueio ATIVO agora (RN005).
      *
      * "BloqueadoAteAfter" vira "where bloqueado_ate > ?". Passando o momento

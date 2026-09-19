@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Nova empresa')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <h1 class="h4 mb-1">Nova empresa</h1>
+            <p class="text-secondary">
+                A empresa nasce junto com os seus dois administradores. Depois
+                disso, o cadastro de funcionários, veículos e o resto é com eles.
+            </p>
+
+            <form th:object="${empresaForm}" th:action="@{/empresas}" method="post">
+
+                <fieldset class="border rounded p-3 mb-4">
+                    <legend class="float-none w-auto px-2 h6">Empresa</legend>
+
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome da empresa</label>
+                        <input type="text" id="nome" th:field="*{nome}"
+                               class="form-control form-control-lg"
+                               th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'"
+                               required autofocus>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('nome')}"
+                             th:errors="*{nome}">Erro</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="identificador" class="form-label">Identificador de acesso</label>
+                        <!--
+                            #002-RF03: o cadastro-empresa.js preenche este campo
+                            enquanto o nome e digitado. Se o Operador mexer nele,
+                            a sugestao para de sobrescrever.
+
+                            Nao tem "required" de proposito: se chegar vazio, o
+                            servidor sugere um a partir do nome e devolve a tela
+                            para conferencia.
+                        -->
+                        <div class="input-group input-group-lg"
+                             th:classappend="${#fields.hasErrors('identificador')} ? 'has-validation'">
+                            <span class="input-group-text">/</span>
+                            <input type="text" id="identificador" th:field="*{identificador}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('identificador')} ? 'is-invalid'"
+                                   autocapitalize="none" autocorrect="off" spellcheck="false"
+                                   autocomplete="off" placeholder="construtora-silva">
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('identificador')}"
+                                 th:errors="*{identificador}">Erro</div>
+                        </div>
+                        <div class="form-text">
+                            Vai no endereço de acesso da empresa. Só letras minúsculas,
+                            números e hífen. <strong>Não pode ser alterado depois</strong>:
+                            mudá-lo quebraria o atalho já instalado no celular dos
+                            funcionários.
+                        </div>
+                    </div>
+
+                    <!-- #002-RF04 e RN004: ja vem com "Obra" e "Obras". -->
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label for="rotuloCcSingular" class="form-label">
+                                Centro de custo (singular)
+                            </label>
+                            <input type="text" id="rotuloCcSingular" th:field="*{rotuloCcSingular}"
+                                   class="form-control form-control-lg"
+                                   th:classappend="${#fields.hasErrors('rotuloCcSingular')} ? 'is-invalid'"
+                                   required>
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('rotuloCcSingular')}"
+                                 th:errors="*{rotuloCcSingular}">Erro</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="rotuloCcPlural" class="form-label">
+                                Centro de custo (plural)
+                            </label>
+                            <input type="text" id="rotuloCcPlural" th:field="*{rotuloCcPlural}"
+                                   class="form-control form-control-lg"
+                                   th:classappend="${#fields.hasErrors('rotuloCcPlural')} ? 'is-invalid'"
+                                   required>
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('rotuloCcPlural')}"
+                                 th:errors="*{rotuloCcPlural}">Erro</div>
+                        </div>
+                    </div>
+                    <div class="form-text">
+                        Como o centro de custo se chama nas telas desta empresa:
+                        "Obra", "Rota", "Contrato"…
+                    </div>
+                </fieldset>
+
+                <!--
+                    #002-RF05 e RN006: DOIS administradores, todos os campos
+                    obrigatorios. Nao ha botao "remover o segundo": a empresa nao
+                    pode nascer com um so, porque nao existe ninguem acima do
+                    Administrador para socorre-lo se ele esquecer a senha.
+                -->
+                <fieldset class="border rounded p-3 mb-4">
+                    <legend class="float-none w-auto px-2 h6">Administradores</legend>
+                    <p class="text-secondary small">
+                        Toda empresa começa com dois: um desbloqueia e redefine a
+                        senha do outro.
+                    </p>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-7">
+                            <label for="nomeAdministrador1" class="form-label">
+                                Nome do 1º administrador
+                            </label>
+                            <input type="text" id="nomeAdministrador1"
+                                   th:field="*{nomeAdministrador1}"
+                                   class="form-control form-control-lg"
+                                   th:classappend="${#fields.hasErrors('nomeAdministrador1')} ? 'is-invalid'"
+                                   required>
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('nomeAdministrador1')}"
+                                 th:errors="*{nomeAdministrador1}">Erro</div>
+                        </div>
+                        <div class="col-sm-5">
+                            <label for="loginAdministrador1" class="form-label">Usuário de acesso</label>
+                            <input type="text" id="loginAdministrador1"
+                                   th:field="*{loginAdministrador1}"
+                                   class="form-control form-control-lg"
+                                   th:classappend="${#fields.hasErrors('loginAdministrador1')} ? 'is-invalid'"
+                                   autocapitalize="none" autocorrect="off" spellcheck="false"
+                                   autocomplete="off" required>
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('loginAdministrador1')}"
+                                 th:errors="*{loginAdministrador1}">Erro</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-sm-7">
+                            <label for="nomeAdministrador2" class="form-label">
+                                Nome do 2º administrador
+                            </label>
+                            <input type="text" id="nomeAdministrador2"
+                                   th:field="*{nomeAdministrador2}"
+                                   class="form-control form-control-lg"
+                                   th:classappend="${#fields.hasErrors('nomeAdministrador2')} ? 'is-invalid'"
+                                   required>
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('nomeAdministrador2')}"
+                                 th:errors="*{nomeAdministrador2}">Erro</div>
+                        </div>
+                        <div class="col-sm-5">
+                            <label for="loginAdministrador2" class="form-label">Usuário de acesso</label>
+                            <input type="text" id="loginAdministrador2"
+                                   th:field="*{loginAdministrador2}"
+                                   class="form-control form-control-lg"
+                                   th:classappend="${#fields.hasErrors('loginAdministrador2')} ? 'is-invalid'"
+                                   autocapitalize="none" autocorrect="off" spellcheck="false"
+                                   autocomplete="off" required>
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('loginAdministrador2')}"
+                                 th:errors="*{loginAdministrador2}">Erro</div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="alert alert-secondary" role="alert">
+                    As senhas dos dois serão geradas pelo sistema e aparecerão na
+                    próxima tela, uma única vez.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Cadastrar</button>
+                    <a th:href="@{/empresas}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</main>
+
+<script th:src="@{/js/cadastro-empresa.js}"></script>
+
+</body>
+</html>

@@ -1,6 +1,5 @@
 package com.gestaofacil.controller;
 
-import com.gestaofacil.model.Perfil;
 import com.gestaofacil.security.UsuarioAutenticado;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -39,10 +38,17 @@ public class InicioController {
         }
 
         // RN006: cada perfil comeca na sua tela.
-        if (logado.getPerfil() == Perfil.ADMINISTRADOR) {
-            return "redirect:/painel";
-        }
-        return "redirect:/lancamentos";
+        //
+        // Um "switch" com os tres perfis, e nao um if/else que manda "todo o
+        // resto" para /lancamentos: foi exatamente assim que o Operador,
+        // quando chegou no card #002, teria caido na tela do motorista e
+        // levado 403. Com o switch sem "default", o compilador obriga quem
+        // acrescentar um perfil ao enum a vir aqui dizer o destino dele.
+        return switch (logado.getPerfil()) {
+            case OPERADOR -> "redirect:/empresas";
+            case ADMINISTRADOR -> "redirect:/painel";
+            case MOTORISTA -> "redirect:/lancamentos";
+        };
     }
 
     /** Tela inicial do Administrador. Provisoria. */
