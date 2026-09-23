@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Veículos')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Veículos</h1>
+        <a th:href="@{/veiculos/novo}" class="btn btn-primary">Novo veículo</a>
+    </div>
+
+    <p class="text-secondary">
+        Frota de <strong th:text="${logado.empresaNome}">Empresa</strong>. Nenhum veículo é
+        excluído: o que foi vendido ou baixado fica como inativo e continua aparecendo
+        nos lançamentos antigos.
+    </p>
+
+    <!-- Confirmacao de uma acao, enviada por addFlashAttribute. -->
+    <div class="alert alert-success" role="alert" th:if="${mensagem}"
+         th:text="${mensagem}">Veículo cadastrado.</div>
+
+    <!-- Acao recusada por regra de negocio: o veiculo na rua ou na oficina
+         nao pode ser desativado. A mensagem explica o motivo e o que fazer. -->
+    <div class="alert alert-danger" role="alert" th:if="${erro}"
+         th:text="${erro}">Ação recusada.</div>
+
+    <div class="alert alert-secondary" role="alert" th:if="${veiculos.isEmpty()}">
+        Nenhum veículo cadastrado ainda.
+    </div>
+
+    <!-- table-responsive: no celular a tabela rola de lado em vez de espremer
+         as colunas ate ficarem ilegiveis. -->
+    <div class="table-responsive" th:unless="${veiculos.isEmpty()}">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Veículo</th>
+                <th scope="col">Placa</th>
+                <th scope="col">RENAVAM</th>
+                <th scope="col">Combustível</th>
+                <th scope="col">Situação</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="veiculo : ${veiculos}">
+                <td>
+                    <span th:text="${veiculo.nome}">Nome do veículo</span>
+                    <small class="d-block text-secondary" th:text="${veiculo.ano}">2020</small>
+                </td>
+                <!-- A placa e guardada sem hifen; quem repoe o tracinho para a
+                     leitura e o getPlacaFormatada da propria entidade. -->
+                <td class="font-monospace" th:text="${veiculo.placaFormatada}">ABC-1D23</td>
+                <td class="font-monospace" th:text="${veiculo.renavam}">00123456789</td>
+                <!-- O rotulo em portugues vem do proprio enum, entao a tela
+                     nunca precisa traduzir DIESEL_S10 na mao. -->
+                <td th:text="${veiculo.tipoCombustivel.rotulo}">Diesel</td>
+                <td>
+                    <!--
+                        #004-RN002 e RN003: aqui o status e apenas MOSTRADO.
+
+                        Nao existe caixa de selecao de status em tela nenhuma:
+                        DISPONIVEL e EM_USO vem da saida e da devolucao (#006),
+                        EM_MANUTENCAO da manutencao (#008), e INATIVO do botao
+                        Desativar, aqui do lado.
+                    -->
+                    <span class="badge text-bg-success"
+                          th:if="${veiculo.status.name() == 'DISPONIVEL'}"
+                          th:text="${veiculo.status.rotulo}">Disponível</span>
+                    <span class="badge text-bg-primary"
+                          th:if="${veiculo.status.name() == 'EM_USO'}"
+                          th:text="${veiculo.status.rotulo}">Em uso</span>
+                    <span class="badge text-bg-warning"
+                          th:if="${veiculo.status.name() == 'EM_MANUTENCAO'}"
+                          th:text="${veiculo.status.rotulo}">Em manutenção</span>
+                    <span class="badge text-bg-secondary"
+                          th:if="${veiculo.status.name() == 'INATIVO'}"
+                          th:text="${veiculo.status.rotulo}">Inativo</span>
+                </td>
+                <td>
+                    <!--
+                        AS ACOES SOBRE O VEICULO.
+
+                        Desativar e Ativar sao FORMULARIOS com method="post", e
+                        nao links: elas mudam dados. Com um link, bastaria outro
+                        site embutir <img src=".../desativar"> para tirar um
+                        caminhao da frota sem ninguem clicar em nada. O th:action
+                        inclui o token CSRF sozinho.
+
+                        O botao Desativar aparece mesmo quando a regra vai
+                        recusar (veiculo em uso ou em manutencao). E proposital,
+                        como na tela de usuarios: o Administrador precisa LER o
+                        motivo em vez de procurar um botao que sumiu. Quem barra
+                        de verdade e o servidor.
+                    -->
+                    <div class="d-flex flex-wrap gap-1 justify-content-end">
+
+                        <a th:href="@{/veiculos/{id}/editar(id=${veiculo.id})}"
+                           class="btn btn-sm btn-outline-primary">Editar</a>
+
+                        <!-- #004-RF03 e RN005: desativar, nunca excluir. -->
+                        <form th:if="${veiculo.emCirculacao}"
+                              th:action="@{/veiculos/{id}/desativar(id=${veiculo.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Desativar
+                            </button>
+                        </form>
+                        <form th:unless="${veiculo.emCirculacao}"
+                              th:action="@{/veiculos/{id}/ativar(id=${veiculo.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                Ativar
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a th:href="@{/painel}" class="btn btn-link px-0">Voltar ao painel</a>
+
+</main>
+
+</body>
+</html>

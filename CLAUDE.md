@@ -21,7 +21,7 @@ e ao professor — não os edite.
 
 ## Estado atual
 
-**Pronto: cards #001, #001.1, #003 e #002, com 141 testes.** O #002 foi
+**Pronto: cards #001, #001.1, #003, #002 e #004, com 163 testes.** O #002 foi
 feito depois do #003, fora da ordem dos números.
 
 - **#001 e #001.1, login:** autenticação com isolamento por empresa, bloqueio
@@ -39,6 +39,13 @@ feito depois do #003, fora da ordem dos números.
   do nome; edição de nome e rótulos (o identificador não muda); inativação, que
   barra o login de todos os usuários da empresa; nova senha para Administrador
   (`/empresas/{id}/administradores`)
+- **#004, veículos** (`/veiculos`, só Administrador): cadastro e edição de
+  nome, ano, placa, RENAVAM e tipo de combustível; desativação e reativação.
+  O status **não aparece no formulário**: o veículo nasce `DISPONIVEL` e o
+  `VeiculoForm` não tem esse campo (regra 2). Placa e RENAVAM são únicos por
+  empresa e normalizados antes de gravar (`service/FormatoDeVeiculo`): placa
+  em maiúsculas sem hífen, RENAVAM só com números e sempre com 11 dígitos,
+  completando os zeros à esquerda dos documentos antigos
 - **Carga inicial** (`config/CargaInicial`), em duas etapas independentes:
   - empresa reservada `gestao-facil` com três Operadores (`jose.lopes`,
     `victor.ruan`, `leonardo.silva`, senha `operador12345`, com troca
@@ -49,8 +56,10 @@ feito depois do #003, fora da ordem dos números.
 
 **Ainda não existe:**
 
-- as entidades e CRUDs de veículo, centro de custo, uso, abastecimento,
-  manutenção e anexo de manutenção
+- as entidades e CRUDs de centro de custo, uso, abastecimento, manutenção e
+  anexo de manutenção
+- as transições de status do veículo para `EM_USO` (#006) e `EM_MANUTENCAO`
+  (#008). Hoje só existem `DISPONIVEL` e `INATIVO` na prática
 - relatórios (RF09)
 - forma de criar os Operadores em produção: hoje só a carga inicial os cria,
   e ela é desligada em produção (`seed.habilitado=false`)
@@ -61,9 +70,16 @@ feito depois do #003, fora da ordem dos números.
 (administrador) e `/lancamentos` (motorista), que existem só para o
 redirecionamento por perfil ter destino.
 
-**Divergência a resolver com o PO:** `docs/requisitos.md` (v1.2) ainda diz que
-"qualquer Administrador pode cadastrar empresa". Os cards #002 e #003 citam a
-versão 1.3, em que só o Operador cadastra. O código segue os cards.
+**Divergências a resolver com o PO:**
+
+- `docs/requisitos.md` (v1.2) ainda diz que "qualquer Administrador pode
+  cadastrar empresa". Os cards #002 e #003 citam a versão 1.3, em que só o
+  Operador cadastra. O código segue os cards.
+- o #004 não diz o que fazer ao desativar um veículo `EM_USO` ou
+  `EM_MANUTENCAO`. O código **recusa** e explica o motivo na tela
+  (`VeiculoService.podeSerDesativado`): desativar apagaria um status calculado,
+  e a devolução do #006 devolveria o veículo "inativo" para `DISPONIVEL`
+  sozinha.
 
 ## Regras que o código precisa garantir
 
@@ -98,8 +114,14 @@ Toda tabela, exceto `empresa`, tem `empresa_id`. O detalhamento dos campos está
 em `Modelo_de_Dados_Gestao_Facil.pdf` (atenção: o PDF usa fontes embutidas e
 não é legível por extração automática de texto).
 
-Existem hoje `empresa`, `usuario` e `anexo_usuario`. Colunas acrescentadas
-pelos cards:
+Existem hoje `empresa`, `usuario`, `anexo_usuario` e `veiculo`.
+
+`veiculo` nasceu no #004 com `empresa_id`, `nome`, `ano`, `renavam`, `placa`,
+`tipo_combustivel` e `status`. Ela **não tem** o campo `ativo` das outras: o
+valor `INATIVO` do próprio `status` faz esse papel, e dois campos para a mesma
+informação acabariam se contradizendo.
+
+Colunas acrescentadas pelos cards às tabelas que já existiam:
 
 | Tabela | Coluna | Para quê | Card |
 |---|---|---|---|
@@ -115,10 +137,13 @@ coluna nova é necessária". Sem elas, porém, não haveria como atender a RF06
 (inativar) nem o critério do histórico. Confirmem com o PO.
 
 Restrições únicas no banco, não só na tela: `(empresa_id, login)` e
-`(empresa_id, cpf)` em `usuario`; `identificador` em `empresa`.
+`(empresa_id, cpf)` em `usuario`; `(empresa_id, placa)` e
+`(empresa_id, renavam)` em `veiculo`; `identificador` em `empresa`.
 
-`usuario.perfil` aceita `OPERADOR`, `ADMINISTRADOR` e `MOTORISTA`, gravados
-como texto.
+`usuario.perfil` aceita `OPERADOR`, `ADMINISTRADOR` e `MOTORISTA`;
+`veiculo.status` aceita `DISPONIVEL`, `EM_USO`, `EM_MANUTENCAO` e `INATIVO`;
+`veiculo.tipo_combustivel` aceita os valores de `TipoCombustivel`. Todos
+gravados como texto.
 
 **Confiram `Empresa` e `Usuario` contra o PDF.** Como ele não é legível por
 extração automática, os campos das duas entidades foram deduzidos do
@@ -139,7 +164,15 @@ extração automática, os campos das duas entidades foram deduzidos do
 
 Criados nos cards #001, #003 e #002. Os próximos CRUDs devem segui-los. O CRUD
 de referência é o de usuários (`UsuarioController`, `UsuarioService`,
-`UsuarioForm`, `templates/usuarios/`).
+`UsuarioForm`, `templates/usuarios/`); o de veículos (#004) é o mesmo desenho,
+menor, e serve de segundo exemplo.
+
+**Campo-chave que o banco compara é normalizado antes de gravar**, sempre por
+uma classe de métodos estáticos em `service/`: `ValidadorDeCpf` (CPF só com
+números) e `FormatoDeVeiculo` (placa em maiúsculas sem hífen, RENAVAM com 11
+dígitos). Sem isso `abc-1d23` e `ABC1D23` seriam duas placas diferentes para a
+restrição única, e o mesmo veículo entraria duas vezes. A mesma função
+normaliza na conferência de duplicidade e na gravação.
 
 ### A empresa na autenticação
 
@@ -336,6 +369,11 @@ empresa: um usuário da empresa A não alcança registro da empresa B. E, desde 
 - **Carga inicial:** cada etapa confere sozinha o que já existe. Uma
   conferência única do tipo "a empresa de teste existe? então pare" impediria
   que dados novos, como os Operadores, chegassem a bancos já criados.
+- **`.param(...)` repetido no MockMvc:** quando um método auxiliar já envia o
+  campo e o teste manda outro valor com o mesmo nome, o Spring fica com o
+  **primeiro** e o teste passa sem testar nada. Monte o POST inteiro à mão
+  quando quiser variar um campo que o auxiliar já preenche (aconteceu no
+  `anoNoFuturoERecusado`, do #004).
 
 ## Como rodar
 

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<!-- O titulo vem do controller, que manda "Novo veículo" ou "Editar veículo". -->
+<head th:replace="~{fragmentos/layout :: cabeca(${tituloDaTela})}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <h1 class="h4 mb-1" th:text="${tituloDaTela}">Novo veículo</h1>
+            <p class="text-secondary">
+                O veículo entra na frota de
+                <strong th:text="${logado.empresaNome}">Empresa</strong>. Não existe
+                campo de empresa: ela vem de quem está logado.
+            </p>
+
+            <!--
+                O MESMO FORMULARIO SERVE PARA CADASTRAR E PARA EDITAR.
+
+                Sem id preenchido, envia para POST /veiculos (cadastro).
+                Com id, envia para POST /veiculos/{id} (edicao). Uma tela so
+                evita que as duas versoes comecem a divergir com o tempo.
+
+                th:action (e nao action) e o que faz o Thymeleaf incluir sozinho
+                o campo escondido do CSRF. Sem ele o Spring Security recusa o envio.
+            -->
+            <form th:object="${veiculoForm}" method="post"
+                  th:action="${veiculoForm.id} == null
+                             ? @{/veiculos}
+                             : @{/veiculos/{id}(id=${veiculoForm.id})}">
+
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome ou modelo</label>
+                    <input type="text" id="nome" th:field="*{nome}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'"
+                           placeholder="Caminhão Ford Cargo" required autofocus>
+                    <div class="form-text">
+                        Como a empresa chama o veículo no dia a dia.
+                    </div>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('nome')}"
+                         th:errors="*{nome}">Erro</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="ano" class="form-label">Ano</label>
+                    <!-- type="number" abre o teclado numerico no celular e ja
+                         impede letras. O limite de cima e conferido tambem no
+                         servidor, porque o atributo max do HTML e so uma ajuda
+                         da tela - quem envia o formulario a mao passa por ele. -->
+                    <input type="number" id="ano" th:field="*{ano}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('ano')} ? 'is-invalid'"
+                           inputmode="numeric" min="1900" step="1" required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('ano')}"
+                         th:errors="*{ano}">Erro</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="placa" class="form-label">Placa</label>
+                    <!-- autocapitalize="characters": a placa e toda em
+                         maiusculas, e assim o teclado do celular ja abre certo.
+                         O servidor sobe para maiusculas de qualquer jeito. -->
+                    <input type="text" id="placa" th:field="*{placa}"
+                           class="form-control form-control-lg text-uppercase"
+                           th:classappend="${#fields.hasErrors('placa')} ? 'is-invalid'"
+                           autocapitalize="characters" autocorrect="off" spellcheck="false"
+                           autocomplete="off" placeholder="ABC1D23" required>
+                    <div class="form-text">
+                        Padrão antigo (ABC1234) ou Mercosul (ABC1D23). Pode digitar
+                        com ou sem hífen.
+                    </div>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('placa')}"
+                         th:errors="*{placa}">Erro</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="renavam" class="form-label">RENAVAM</label>
+                    <input type="text" id="renavam" th:field="*{renavam}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('renavam')} ? 'is-invalid'"
+                           inputmode="numeric" autocomplete="off" required>
+                    <div class="form-text">
+                        Os números do documento do veículo. Documentos antigos trazem
+                        9 dígitos; o sistema completa os zeros da frente.
+                    </div>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('renavam')}"
+                         th:errors="*{renavam}">Erro</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="tipoCombustivel" class="form-label">Tipo de combustível</label>
+                    <!-- A lista vem do modelo, montada por
+                         TipoCombustivel.paraSelecao(). Caixa de selecao em vez de
+                         texto livre: senao a mesma frota acabaria com "Diesel",
+                         "diesel" e "disel", e o relatorio de custo por combustivel
+                         (RF09) nao teria como somar. -->
+                    <select id="tipoCombustivel" th:field="*{tipoCombustivel}"
+                            class="form-select form-select-lg"
+                            th:classappend="${#fields.hasErrors('tipoCombustivel')} ? 'is-invalid'"
+                            required>
+                        <option value="">Selecione…</option>
+                        <option th:each="combustivel : ${combustiveis}"
+                                th:value="${combustivel}"
+                                th:text="${combustivel.rotulo}">Combustível</option>
+                    </select>
+                    <div class="invalid-feedback"
+                         th:if="${#fields.hasErrors('tipoCombustivel')}"
+                         th:errors="*{tipoCombustivel}">Erro</div>
+                </div>
+
+                <!--
+                    #004-RN003 e regra 2 do projeto: NAO EXISTE CAMPO DE STATUS
+                    nesta tela, nem escondido.
+
+                    O veiculo novo nasce disponível; depois disso quem muda a
+                    situacao sao a saida e a devolucao (#006), a manutencao
+                    (#008) e o botao Desativar da lista. O VeiculoForm nem tem
+                    um campo de status, entao um "status=EM_USO" enviado a mao
+                    pelo navegador nao tem onde encaixar.
+                -->
+                <div class="alert alert-secondary" role="alert"
+                     th:if="${veiculoForm.id} == null">
+                    O veículo será cadastrado como <strong>disponível</strong>. A
+                    situação é controlada pelo sistema: muda sozinha quando houver
+                    saída, devolução ou manutenção.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Salvar</button>
+                    <a th:href="@{/veiculos}" class="btn btn-outline-secondary btn-lg">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

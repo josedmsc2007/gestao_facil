@@ -22,6 +22,9 @@
         <a th:href="@{/usuarios}" class="btn btn-primary btn-lg py-3">
             Usuários
         </a>
+        <a th:href="@{/veiculos}" class="btn btn-primary btn-lg py-3">
+            Veículos
+        </a>
     </div>
 
     <!--
@@ -35,9 +38,9 @@
         aparece "obras"; para uma transportadora apareceria "rotas".
     -->
     <div class="alert alert-secondary mt-4" role="alert">
-        Esta tela ainda está em construção. Os cadastros de veículos,
-        <span th:text="${#strings.toLowerCase(logado.rotuloCcPlural)}">obras</span>
-        e usuários entram nos próximos cards.
+        Esta tela ainda está em construção. O cadastro de
+        <span th:text="${#strings.toLowerCase(logado.rotuloCcPlural)}">obras</span>,
+        os lançamentos e os relatórios entram nos próximos cards.
     </div>
 
 </main>

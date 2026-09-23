@@ -94,6 +94,11 @@ public class SecurityConfig {
                         // desbloqueio de contas (RN005).
                         .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")
 
+                        // #004-RN004: a frota so e cadastrada e alterada pelo
+                        // Administrador. O motorista usa os veiculos pelas
+                        // telas de lancamento (#006 e #007), nunca por esta.
+                        .requestMatchers("/veiculos/**").hasRole("ADMINISTRADOR")
+
                         // Todo o resto: so os perfis DA EMPRESA.
                         //
                         // Ate o card #002 esta linha era
