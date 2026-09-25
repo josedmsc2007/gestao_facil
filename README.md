@@ -16,7 +16,6 @@ Trabalho de faculdade, desenvolvido para uma construtora real.
 
 | Arquivo | Conteúdo |
 |---|---|
-| `docs/requisitos.md` | Requisitos completos, versão 1.2 |
 | `docs/cards/` | Cards de desenvolvimento, um por funcionalidade |
 | `PROJETO_..._v1.2.docx` | Documento oficial entregue ao cliente |
 | `Modelo_de_Dados_Gestao_Facil.pdf` | Detalhamento das tabelas |

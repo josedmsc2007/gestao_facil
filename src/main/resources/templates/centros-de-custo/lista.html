@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<!--
+    REGRA 6 DO PROJETO E #005-RN005: nenhum nome de centro de custo esta
+    escrito neste arquivo. Tudo o que o funcionario le vem de
+    logado.rotuloCcSingular / logado.rotuloCcPlural, que saem do cadastro da
+    empresa: uma construtora ve um nome, uma transportadora ve outro, sem
+    mexer numa linha daqui.
+
+    Ate o titulo da aba usa o rotulo - e por isso ele e passado como
+    variavel para o fragmento, e nao como texto fixo.
+
+    ATENCAO: o comentario HTML VAI PARA O NAVEGADOR. Escrever aqui o rotulo
+    de um cliente como exemplo o faria aparecer na pagina de todos os
+    outros - foi o que dois testes deste card pegaram. Exemplo de rotulo,
+    so em comentario de arquivo .java.
+-->
+<head th:replace="~{fragmentos/layout :: cabeca(${logado.rotuloCcPlural})}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0" th:text="${logado.rotuloCcPlural}">Centros de custo</h1>
+        <!-- O verbo na frente do rotulo evita o genero, que o sistema nao
+             conhece: "cadastrada" e "cadastrado" nao servem para os dois. -->
+        <a th:href="@{/centros-de-custo/novo}" class="btn btn-primary"
+           th:text="|Cadastrar ${logado.rotuloCcSingular}|">Cadastrar</a>
+    </div>
+
+    <!-- Tambem aqui o nome do conceito vem do cadastro da empresa, nao do
+         template. -->
+    <p class="text-secondary">
+        <span th:text="${logado.rotuloCcPlural}">Centros de custo</span> de
+        <strong th:text="${logado.empresaNome}">Empresa</strong>, a que os veículos
+        são vinculados na saída. Nenhum cadastro é excluído: o que termina fica como
+        inativo e continua aparecendo nos lançamentos antigos.
+    </p>
+
+    <!-- Confirmacao de uma acao, enviada por addFlashAttribute. -->
+    <div class="alert alert-success" role="alert" th:if="${mensagem}"
+         th:text="${mensagem}">Cadastro concluído.</div>
+
+    <div class="alert alert-secondary" role="alert" th:if="${centrosDeCusto.isEmpty()}"
+         th:text="|Nenhum cadastro em ${logado.rotuloCcPlural} ainda.|">
+        Nenhum cadastro ainda.
+    </div>
+
+    <!-- table-responsive: no celular a tabela rola de lado em vez de espremer
+         as colunas ate ficarem ilegiveis. -->
+    <div class="table-responsive" th:unless="${centrosDeCusto.isEmpty()}">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th scope="col" th:text="${logado.rotuloCcSingular}">Centro de custo</th>
+                <th scope="col">Cidade</th>
+                <th scope="col">Endereço</th>
+                <th scope="col">Situação</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="centroCusto : ${centrosDeCusto}">
+                <td th:text="${centroCusto.nome}">Nome</td>
+                <!-- "Campinas/SP" vem pronto da propria entidade. -->
+                <td th:text="${centroCusto.cidadeComEstado}">Campinas/SP</td>
+                <td>
+                    <span th:if="${centroCusto.endereco}"
+                          th:text="${centroCusto.endereco}">Rua das Flores, 100</span>
+                    <span class="text-secondary" th:unless="${centroCusto.endereco}">—</span>
+                </td>
+                <td>
+                    <span class="badge text-bg-success" th:if="${centroCusto.ativo}">Ativo</span>
+                    <span class="badge text-bg-secondary"
+                          th:unless="${centroCusto.ativo}">Inativo</span>
+                </td>
+                <td>
+                    <!--
+                        Desativar e Ativar sao FORMULARIOS com method="post", e
+                        nao links: elas mudam dados. Com um link, bastaria outro
+                        site embutir <img src=".../desativar"> para encerrar uma
+                        cadastro sem ninguem clicar em nada. O th:action inclui o
+                        token CSRF sozinho.
+                    -->
+                    <div class="d-flex flex-wrap gap-1 justify-content-end">
+
+                        <a th:href="@{/centros-de-custo/{id}/editar(id=${centroCusto.id})}"
+                           class="btn btn-sm btn-outline-primary">Editar</a>
+
+                        <!-- #005-RF03 e RN004: desativar, nunca excluir. -->
+                        <form th:if="${centroCusto.ativo}"
+                              th:action="@{/centros-de-custo/{id}/desativar(id=${centroCusto.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Desativar
+                            </button>
+                        </form>
+                        <form th:unless="${centroCusto.ativo}"
+                              th:action="@{/centros-de-custo/{id}/ativar(id=${centroCusto.id})}"
+                              method="post" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                Ativar
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a th:href="@{/painel}" class="btn btn-link px-0">Voltar ao painel</a>
+
+</main>
+
+</body>
+</html>

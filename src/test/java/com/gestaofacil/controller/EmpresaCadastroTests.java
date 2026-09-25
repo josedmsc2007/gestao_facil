@@ -364,9 +364,14 @@ class EmpresaCadastroTests {
                 .findByEmpresaIdAndLogin(criada.getId(), "maria.silva").orElseThrow();
         administrador.setSenhaTemporaria(false);   // como se ja tivesse trocado
 
+        // O painel mostra o rotulo no botao que leva aos centros de custo,
+        // criado no card #005. Ate o #004 quem o mostrava era a frase de
+        // "tela em construcao", em minusculas - por isso esta conferencia
+        // procurava "contratos". A frase saiu, o botao ficou, e a regra 6
+        // continua sendo provada do mesmo jeito.
         mockMvc.perform(get("/painel").with(user(new UsuarioAutenticado(administrador, criada))))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("contratos")));
+                .andExpect(content().string(containsString("Contratos")));
     }
 
     @Test

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<!-- O titulo vem do controller ja montado: o verbo mais o rotulo da empresa,
+     entao cada cliente le o nome que cadastrou (regra 6 do projeto e
+     #005-RN005).
+
+     ATENCAO: comentario HTML VAI PARA O NAVEGADOR. Escrever aqui o rotulo de
+     um cliente como exemplo o faria aparecer na pagina de todos os outros -
+     foi o que dois testes deste card pegaram. -->
+<head th:replace="~{fragmentos/layout :: cabeca(${tituloDaTela})}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+
+            <h1 class="h4 mb-1" th:text="${tituloDaTela}">Cadastrar</h1>
+            <p class="text-secondary">
+                O cadastro fica vinculado a
+                <strong th:text="${logado.empresaNome}">Empresa</strong>. Não existe
+                campo de empresa: ela vem de quem está logado.
+            </p>
+
+            <!--
+                O MESMO FORMULARIO SERVE PARA CADASTRAR E PARA EDITAR.
+
+                Sem id preenchido, envia para POST /centros-de-custo (cadastro).
+                Com id, envia para POST /centros-de-custo/{id} (edicao). Uma tela
+                so evita que as duas versoes comecem a divergir com o tempo.
+
+                th:action (e nao action) e o que faz o Thymeleaf incluir sozinho
+                o campo escondido do CSRF. Sem ele o Spring Security recusa o envio.
+            -->
+            <form th:object="${centroCustoForm}" method="post"
+                  th:action="${centroCustoForm.id} == null
+                             ? @{/centros-de-custo}
+                             : @{/centros-de-custo/{id}(id=${centroCustoForm.id})}">
+
+                <div class="mb-3">
+                    <!-- So "Nome", sem o rotulo colado: "Nome da ..." e "Nome
+                         do ..." mudam o artigo conforme o genero do rotulo, e o
+                         sistema nao conhece o genero do que a empresa cadastrou.
+                         O rotulo ja esta no titulo da tela. -->
+                    <label for="nome" class="form-label">Nome</label>
+                    <input type="text" id="nome" th:field="*{nome}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'"
+                           required autofocus>
+                    <div class="form-text">
+                        O nome usado no dia a dia da empresa. É o que vai aparecer
+                        na tela de saída de veículo.
+                    </div>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('nome')}"
+                         th:errors="*{nome}">Erro</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 col-sm-8 mb-3">
+                        <label for="cidade" class="form-label">Cidade</label>
+                        <input type="text" id="cidade" th:field="*{cidade}"
+                               class="form-control form-control-lg"
+                               th:classappend="${#fields.hasErrors('cidade')} ? 'is-invalid'"
+                               required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('cidade')}"
+                             th:errors="*{cidade}">Erro</div>
+                    </div>
+
+                    <div class="col-12 col-sm-4 mb-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <!-- Caixa de selecao em vez de campo de texto: assim
+                             nao entra "sp", "S.P." nem "XX" na coluna, e o
+                             relatorio por estado consegue agrupar. O servidor
+                             confere de novo a sigla que voltar daqui
+                             (UnidadesFederativas.valida). -->
+                        <select id="estado" th:field="*{estado}"
+                                class="form-select form-select-lg"
+                                th:classappend="${#fields.hasErrors('estado')} ? 'is-invalid'"
+                                required>
+                            <option value="">UF</option>
+                            <option th:each="sigla : ${estados}"
+                                    th:value="${sigla}"
+                                    th:text="${sigla}">SP</option>
+                        </select>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('estado')}"
+                             th:errors="*{estado}">Erro</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="endereco" class="form-label">
+                        Endereço <span class="text-secondary fw-normal">(opcional)</span>
+                    </label>
+                    <input type="text" id="endereco" th:field="*{endereco}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('endereco')} ? 'is-invalid'"
+                           placeholder="Rua das Flores, 100 — Centro">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('endereco')}"
+                         th:errors="*{endereco}">Erro</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Salvar</button>
+                    <a th:href="@{/centros-de-custo}" class="btn btn-outline-secondary btn-lg">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

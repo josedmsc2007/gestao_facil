@@ -99,6 +99,11 @@ public class SecurityConfig {
                         // telas de lancamento (#006 e #007), nunca por esta.
                         .requestMatchers("/veiculos/**").hasRole("ADMINISTRADOR")
 
+                        // #005-RN002: o mesmo para os centros de custo. O
+                        // motorista vai apenas ESCOLHER um deles na tela de
+                        // saida (#006), sem poder cadastrar nem alterar.
+                        .requestMatchers("/centros-de-custo/**").hasRole("ADMINISTRADOR")
+
                         // Todo o resto: so os perfis DA EMPRESA.
                         //
                         // Ate o card #002 esta linha era

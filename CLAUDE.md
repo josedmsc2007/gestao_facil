@@ -4,10 +4,10 @@ Sistema de controle de veículos para uma construtora real, desenvolvido como
 trabalho de faculdade por um grupo **iniciante em programação** que já teve
 contato com Java.
 
-Os requisitos completos estão em `docs/requisitos.md` (versão 1.2). Leia esse
-arquivo antes de implementar qualquer tela. Cada funcionalidade tem um card em
-`docs/cards/`. Os `.docx` e o `.pdf` na raiz são as versões entregues ao cliente
-e ao professor — não os edite.
+Os requisitos completos vivem no quadro do Trello da equipe. Cada
+funcionalidade tem um card espelhado em `docs/cards/`, que é o que se lê antes
+de implementar qualquer tela. Os `.docx` e o `.pdf` na raiz são as versões
+entregues ao cliente e ao professor — não os edite.
 
 ## Stack
 
@@ -21,8 +21,8 @@ e ao professor — não os edite.
 
 ## Estado atual
 
-**Pronto: cards #001, #001.1, #003, #002 e #004, com 163 testes.** O #002 foi
-feito depois do #003, fora da ordem dos números.
+**Pronto: cards #001, #001.1, #003, #002, #004 e #005, com 181 testes.** O #002
+foi feito depois do #003, fora da ordem dos números.
 
 - **#001 e #001.1, login:** autenticação com isolamento por empresa, bloqueio
   por tentativas, logout, troca obrigatória de senha, aviso de tentativas
@@ -46,6 +46,12 @@ feito depois do #003, fora da ordem dos números.
   empresa e normalizados antes de gravar (`service/FormatoDeVeiculo`): placa
   em maiúsculas sem hífen, RENAVAM só com números e sempre com 11 dígitos,
   completando os zeros à esquerda dos documentos antigos
+- **#005, centros de custo** (`/centros-de-custo`, só Administrador): cadastro
+  e edição de nome, cidade, estado e endereço (opcional); desativação e
+  reativação pelo campo `ativo`. O estado é uma caixa de seleção com as 27
+  siglas (`service/UnidadesFederativas`), conferida de novo no servidor. As
+  telas não escrevem "Obra" em lugar nenhum: tudo vem de
+  `logado.getRotuloCcSingular()` / `getRotuloCcPlural()` (regra 6)
 - **Carga inicial** (`config/CargaInicial`), em duas etapas independentes:
   - empresa reservada `gestao-facil` com três Operadores (`jose.lopes`,
     `victor.ruan`, `leonardo.silva`, senha `operador12345`, com troca
@@ -56,8 +62,7 @@ feito depois do #003, fora da ordem dos números.
 
 **Ainda não existe:**
 
-- as entidades e CRUDs de centro de custo, uso, abastecimento, manutenção e
-  anexo de manutenção
+- as entidades e CRUDs de uso, abastecimento, manutenção e anexo de manutenção
 - as transições de status do veículo para `EM_USO` (#006) e `EM_MANUTENCAO`
   (#008). Hoje só existem `DISPONIVEL` e `INATIVO` na prática
 - relatórios (RF09)
@@ -72,14 +77,17 @@ redirecionamento por perfil ter destino.
 
 **Divergências a resolver com o PO:**
 
-- `docs/requisitos.md` (v1.2) ainda diz que "qualquer Administrador pode
-  cadastrar empresa". Os cards #002 e #003 citam a versão 1.3, em que só o
-  Operador cadastra. O código segue os cards.
 - o #004 não diz o que fazer ao desativar um veículo `EM_USO` ou
   `EM_MANUTENCAO`. O código **recusa** e explica o motivo na tela
   (`VeiculoService.podeSerDesativado`): desativar apagaria um status calculado,
   e a devolução do #006 devolveria o veículo "inativo" para `DISPONIVEL`
   sozinha.
+- o #005 lista os campos do centro de custo sem `codigo`, que a versão antiga
+  do RF05 trazia como opcional. O código segue o card e **não** tem a coluna.
+- o #005 não diz se dois centros de custo podem ter o mesmo nome na mesma
+  empresa. Hoje podem — não há restrição única. Dois nomes iguais ficam
+  indistinguíveis na tela de saída do #006, então vale decidir antes daquele
+  card.
 
 ## Regras que o código precisa garantir
 
@@ -103,7 +111,10 @@ redirecionamento por perfil ter destino.
    nome UUID, servidos por endpoint que confere login e empresa.
 6. **Centro de custo é genérico.** A tabela é `centro_custo`; o nome exibido
    vem de `empresa.rotulo_cc_singular` / `rotulo_cc_plural`. Nunca escreva
-   "Obra" fixo em template ou mensagem — use o rótulo da empresa.
+   "Obra" fixo em template ou mensagem — use o rótulo da empresa. Nem em
+   comentário HTML: ele vai para o navegador de todos os clientes. E a
+   **mensagem não pode ter gênero**, porque o rótulo pode ser "Obra" ou
+   "Contrato": fale do cadastro ("Cadastro de X concluído"), não da coisa.
 
 ## Modelo de dados
 
@@ -114,12 +125,17 @@ Toda tabela, exceto `empresa`, tem `empresa_id`. O detalhamento dos campos está
 em `Modelo_de_Dados_Gestao_Facil.pdf` (atenção: o PDF usa fontes embutidas e
 não é legível por extração automática de texto).
 
-Existem hoje `empresa`, `usuario`, `anexo_usuario` e `veiculo`.
+Existem hoje `empresa`, `usuario`, `anexo_usuario`, `veiculo` e `centro_custo`.
 
 `veiculo` nasceu no #004 com `empresa_id`, `nome`, `ano`, `renavam`, `placa`,
 `tipo_combustivel` e `status`. Ela **não tem** o campo `ativo` das outras: o
 valor `INATIVO` do próprio `status` faz esse papel, e dois campos para a mesma
 informação acabariam se contradizendo.
+
+`centro_custo` nasceu no #005 com `empresa_id`, `nome`, `cidade`, `estado`,
+`endereco` (o único opcional) e `ativo`. Aqui o campo é um booleano, e não um
+status: centro de custo não tem situação calculada — ou está em uso, ou não
+está. `estado` guarda a sigla com 2 letras maiúsculas.
 
 Colunas acrescentadas pelos cards às tabelas que já existiam:
 
@@ -143,11 +159,12 @@ Restrições únicas no banco, não só na tela: `(empresa_id, login)` e
 `usuario.perfil` aceita `OPERADOR`, `ADMINISTRADOR` e `MOTORISTA`;
 `veiculo.status` aceita `DISPONIVEL`, `EM_USO`, `EM_MANUTENCAO` e `INATIVO`;
 `veiculo.tipo_combustivel` aceita os valores de `TipoCombustivel`. Todos
-gravados como texto.
+gravados como texto. `centro_custo` não tem restrição única: dois centros de
+custo de mesmo nome convivem na mesma empresa (ver divergências).
 
 **Confiram `Empresa` e `Usuario` contra o PDF.** Como ele não é legível por
-extração automática, os campos das duas entidades foram deduzidos do
-`requisitos.md` e dos cards, e podem estar incompletos.
+extração automática, os campos das duas entidades foram deduzidos dos
+cards, e podem estar incompletos.
 
 ## Convenções
 
@@ -169,8 +186,8 @@ menor, e serve de segundo exemplo.
 
 **Campo-chave que o banco compara é normalizado antes de gravar**, sempre por
 uma classe de métodos estáticos em `service/`: `ValidadorDeCpf` (CPF só com
-números) e `FormatoDeVeiculo` (placa em maiúsculas sem hífen, RENAVAM com 11
-dígitos). Sem isso `abc-1d23` e `ABC1D23` seriam duas placas diferentes para a
+números), `FormatoDeVeiculo` (placa em maiúsculas sem hífen, RENAVAM com 11
+dígitos) e `UnidadesFederativas` (sigla do estado em maiúsculas). Sem isso `abc-1d23` e `ABC1D23` seriam duas placas diferentes para a
 restrição única, e o mesmo veículo entraria duas vezes. A mesma função
 normaliza na conferência de duplicidade e na gravação.
 
@@ -369,6 +386,11 @@ empresa: um usuário da empresa A não alcança registro da empresa B. E, desde 
 - **Carga inicial:** cada etapa confere sozinha o que já existe. Uma
   conferência única do tipo "a empresa de teste existe? então pare" impediria
   que dados novos, como os Operadores, chegassem a bancos já criados.
+- **Comentário HTML vai para o navegador.** O Thymeleaf não remove `<!-- -->`;
+  só o texto de exemplo dentro de um `th:text` é substituído. Um comentário de
+  template que citava o rótulo de um cliente como exemplo aparecia na página de
+  todos os outros, e dois testes do #005 pegaram isso. Exemplo de rótulo, só em
+  comentário de `.java`.
 - **`.param(...)` repetido no MockMvc:** quando um método auxiliar já envia o
   campo e o teste manda outro valor com o mesmo nome, o Spring fica com o
   **primeiro** e o teste passa sem testar nada. Monte o POST inteiro à mão
