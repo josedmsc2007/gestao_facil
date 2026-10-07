@@ -25,11 +25,11 @@ import java.time.Year;
 import java.util.List;
 
 /**
- * Cadastro, consulta e edicao de veiculos (#004).
+ * Cadastro, consulta e edicao de veiculos.
  *
  * QUEM PODE ENTRAR AQUI
  * Ninguem confere o perfil dentro destes metodos: o SecurityConfig ja exige
- * ROLE_ADMINISTRADOR para /veiculos/** (#004-RN004), e uma regra escrita num
+ * ROLE_ADMINISTRADOR para /veiculos/ e uma regra escrita num
  * lugar so nao tem como ser esquecida num metodo novo.
  *
  * DE ONDE VEM A EMPRESA
@@ -39,9 +39,9 @@ import java.util.List;
  * registro em outra empresa.
  *
  * O QUE ESTE CONTROLLER NAO FAZ
- * Nao recebe status de lugar nenhum (#004-RN003). Nao existe metodo para
+ * Nao recebe status de lugar nenhum. Nao existe metodo para
  * "mudar o status": existem Desativar e Ativar, cada um com a sua regra. As
- * transicoes para EM_USO e EM_MANUTENCAO virao dos cards #006 e #008, pelo
+ * transicoes para EM_USO e EM_MANUTENCAO virao dos cards, pelo
  * service, longe de qualquer formulario.
  */
 @Controller
@@ -49,7 +49,7 @@ import java.util.List;
 public class VeiculoController {
 
     /**
-     * Quantos anos a frente do ano atual o cadastro aceita (#004-RF01).
+     * Quantos anos a frente do ano atual o cadastro aceita.
      *
      * E 1 porque a industria lanca o modelo do ano seguinte ainda neste ano:
      * em outubro de 2026 a concessionaria ja entrega um caminhao 2027. Mais
@@ -67,14 +67,14 @@ public class VeiculoController {
     }
 
     /* ==================================================================
-       Consulta (#004-RF02)
+       Consulta
        ================================================================== */
 
     /**
      * Lista os veiculos da empresa, em circulacao e inativos.
      *
      * O inativo continua aparecendo porque e daqui que o Administrador o
-     * reativa - nada e apagado (regra 3 do projeto).
+     * reativa - nada e apagado.
      */
     @GetMapping
     public String listar(@AuthenticationPrincipal UsuarioAutenticado logado, Model model) {
@@ -86,7 +86,7 @@ public class VeiculoController {
     }
 
     /* ==================================================================
-       Cadastro (#004-RF01)
+       Cadastro
        ================================================================== */
 
     /** Mostra o formulario em branco. */
@@ -129,7 +129,7 @@ public class VeiculoController {
     }
 
     /* ==================================================================
-       Edicao (#004-RF02)
+       Edicao
        ================================================================== */
 
     /** Mostra o formulario preenchido com os dados de um veiculo da empresa. */

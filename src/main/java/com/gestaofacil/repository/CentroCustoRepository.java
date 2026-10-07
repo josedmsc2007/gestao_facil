@@ -10,9 +10,10 @@ import java.util.Optional;
  * Repositorio da tabela "centro_custo".
  *
  * ATENCAO - regra 1 do projeto (isolamento por empresa): TODO metodo daqui
- * leva o id da empresa. Nao existe "listar todos os centros de custo": duas
- * empresas podem ter uma obra com o mesmo nome, e nenhuma delas pode ver a
- * da outra (#005-RN003). O filtro por empresa mora na consulta, nao na tela.
+ * leva o id da empresa. Nao existe "listar todos os centros de custo" nem
+ * "buscar pelo nome" sozinho: duas empresas podem ter uma obra com o mesmo
+ * nome (#005-RN006), e nenhuma delas pode ver a da outra (#005-RN003). O
+ * filtro por empresa mora na consulta, nao na tela.
  */
 public interface CentroCustoRepository extends JpaRepository<CentroCusto, Long> {
 
@@ -45,4 +46,21 @@ public interface CentroCustoRepository extends JpaRepository<CentroCusto, Long> 
      * vazio e o controller responde 404.
      */
     Optional<CentroCusto> findByIdAndEmpresaId(Long id, Long empresaId);
+
+    /**
+     * #005-RN006: o nome ja existe nesta empresa? Usado no cadastro.
+     *
+     * "IgnoreCase" faz o banco comparar os dois lados em maiusculas
+     * (upper(nome) = upper(?)), entao "Obra Norte" e "obra norte" contam como
+     * o mesmo nome. Repare que NAO ha "AtivoTrue" no nome do metodo: o
+     * inativo tambem conta, senao reativa-lo depois criaria dois iguais.
+     */
+    boolean existsByEmpresaIdAndNomeIgnoreCase(Long empresaId, String nome);
+
+    /**
+     * O mesmo, para a EDICAO: ignora o proprio registro que esta sendo
+     * editado (IdNot = "id diferente de"), pelo mesmo motivo da placa em
+     * veiculo - sem isto, salvar sem mexer no nome acusaria duplicidade.
+     */
+    boolean existsByEmpresaIdAndNomeIgnoreCaseAndIdNot(Long empresaId, String nome, Long id);
 }

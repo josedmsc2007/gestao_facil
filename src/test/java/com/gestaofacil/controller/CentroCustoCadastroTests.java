@@ -181,6 +181,111 @@ class CentroCustoCadastroTests {
     }
 
     /* ==================================================================
+       #005-RN006 - nome unico por empresa
+       ================================================================== */
+
+    @Test
+    @DisplayName("#005-RN006: nome repetido na mesma empresa e recusado, mesmo com outra caixa e espacos")
+    void nomeRepetidoNaMesmaEmpresaERecusado() throws Exception {
+
+        criarCentroCusto(alfa, "Obra Norte", "Campinas", "SP");
+        long antes = centroCustoRepository.count();
+
+        // Identico, so em minusculas, so com espacos nas pontas e as duas
+        // coisas juntas: para a RN006 os quatro sao o mesmo nome.
+        for (String nome : List.of("Obra Norte", "obra norte", "  Obra Norte  ", " OBRA NORTE ")) {
+            mockMvc.perform(cadastro(nome, "Jundiaí", "SP")
+                            .with(comoUsuario(adminAlfa, alfa)))
+                    .andExpect(status().isOk())   // volta para o formulario
+                    .andExpect(model().attributeHasFieldErrors("centroCustoForm", "nome"));
+        }
+
+        assertEquals(antes, centroCustoRepository.count(), "nada pode ter sido gravado");
+    }
+
+    @Test
+    @DisplayName("#005-RN006: o nome de um centro de custo inativo tambem nao pode ser repetido")
+    void nomeDeInativoTambemConta() throws Exception {
+
+        CentroCusto encerrada = criarCentroCusto(alfa, "Obra Norte", "Campinas", "SP");
+        encerrada.setAtivo(false);
+        centroCustoRepository.save(encerrada);
+
+        // O inativo continua existindo (regra 3) e pode ser reativado: se o
+        // nome fosse liberado, a reativacao deixaria dois iguais na empresa.
+        mockMvc.perform(cadastro("Obra Norte", "Jundiaí", "SP")
+                        .with(comoUsuario(adminAlfa, alfa)))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("centroCustoForm", "nome"));
+    }
+
+    @Test
+    @DisplayName("#005-RN006: o mesmo nome e aceito em empresas diferentes")
+    void mesmoNomeEmEmpresasDiferentes() throws Exception {
+
+        // "Rota Litoral" ja existe na Beta (ver o @BeforeEach). Para a Alfa
+        // isso nao quer dizer nada: ela nem enxerga os registros da Beta.
+        mockMvc.perform(cadastro("Rota Litoral", "Santos", "SP")
+                        .with(comoUsuario(adminAlfa, alfa)))
+                .andExpect(redirectedUrl("/centros-de-custo"));
+
+        assertTrue(buscar(alfa, "Rota Litoral").isPresent());
+        assertTrue(buscar(beta, "Rota Litoral").isPresent());
+    }
+
+    @Test
+    @DisplayName("#005-RN006: editar sem trocar o nome nao acusa o proprio registro")
+    void edicaoNaoComparaORegistroComEleMesmo() throws Exception {
+
+        CentroCusto centroCusto = criarCentroCusto(alfa, "Obra Norte", "Campinas", "SP");
+
+        // So a cidade muda. Sem o "IdNot" da consulta, o nome encontrado
+        // seria o do proprio registro e a edicao nunca passaria.
+        mockMvc.perform(post("/centros-de-custo/" + centroCusto.getId())
+                        .param("nome", "Obra Norte")
+                        .param("cidade", "Jundiaí")
+                        .param("estado", "SP")
+                        .with(csrf())
+                        .with(comoUsuario(adminAlfa, alfa)))
+                .andExpect(redirectedUrl("/centros-de-custo"));
+
+        assertEquals("Jundiaí",
+                centroCustoRepository.findById(centroCusto.getId()).orElseThrow().getCidade());
+
+        // Trocar so a caixa das letras do proprio nome tambem e permitido.
+        mockMvc.perform(post("/centros-de-custo/" + centroCusto.getId())
+                        .param("nome", "OBRA NORTE")
+                        .param("cidade", "Jundiaí")
+                        .param("estado", "SP")
+                        .with(csrf())
+                        .with(comoUsuario(adminAlfa, alfa)))
+                .andExpect(redirectedUrl("/centros-de-custo"));
+
+        assertEquals("OBRA NORTE",
+                centroCustoRepository.findById(centroCusto.getId()).orElseThrow().getNome());
+    }
+
+    @Test
+    @DisplayName("#005-RN006: a edicao nao pode assumir o nome de outro centro de custo da empresa")
+    void edicaoNaoAssumeNomeDeOutro() throws Exception {
+
+        criarCentroCusto(alfa, "Obra Norte", "Campinas", "SP");
+        CentroCusto sul = criarCentroCusto(alfa, "Obra Sul", "Campinas", "SP");
+
+        mockMvc.perform(post("/centros-de-custo/" + sul.getId())
+                        .param("nome", "obra norte")
+                        .param("cidade", "Campinas")
+                        .param("estado", "SP")
+                        .with(csrf())
+                        .with(comoUsuario(adminAlfa, alfa)))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("centroCustoForm", "nome"));
+
+        assertEquals("Obra Sul",
+                centroCustoRepository.findById(sul.getId()).orElseThrow().getNome());
+    }
+
+    /* ==================================================================
        Regra 6 do projeto e #005-RN005 - o rotulo vem da empresa
        ================================================================== */
 

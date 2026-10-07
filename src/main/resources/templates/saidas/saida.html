@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Registrar saída')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <h1 class="h4 mb-3">Registrar saída de veículo</h1>
+
+            <!-- #006-RN006: sem internet nao ha lancamento. Esta caixa nasce
+                 escondida (d-none) e quem a mostra e o aviso-sem-conexao.js,
+                 la embaixo. -->
+            <div id="aviso-sem-conexao" class="alert alert-warning d-none" role="alert">
+                Sem conexão com a internet. Não é possível registrar agora, e nada foi
+                enviado. Quando o sinal voltar, toque no botão de novo.
+            </div>
+
+            <!-- Recusa de regra de negocio, vinda do UsoVeiculoService. -->
+            <div class="alert alert-danger" role="alert" th:if="${erro}"
+                 th:text="${erro}">Ação recusada.</div>
+
+            <!-- Sem veiculo ou sem destino para escolher nao ha o que lancar:
+                 a tela explica em vez de mostrar uma caixa de selecao vazia.
+                 "disponíveis" serve para qualquer rotulo, masculino ou
+                 feminino (regra 6). -->
+            <div class="alert alert-secondary" role="alert" th:if="${veiculos.isEmpty()}">
+                Nenhum veículo disponível no momento. Fale com o administrador.
+            </div>
+            <div class="alert alert-secondary" role="alert" th:if="${centrosDeCusto.isEmpty()}">
+                Não há <span th:text="${logado.rotuloCcPlural}">destinos</span> disponíveis
+                para lançamento. Fale com o administrador.
+            </div>
+
+            <!--
+                O QUE ESTE FORMULARIO NAO ENVIA: empresa, motorista, status do
+                veiculo e data de registro. Os quatro sao do servidor.
+
+                th:action faz o Thymeleaf incluir o token CSRF.
+                data-exige-conexao avisa o aviso-sem-conexao.js de que este
+                envio precisa de internet.
+            -->
+            <form th:object="${saidaForm}" th:action="@{/saidas}" method="post"
+                  data-exige-conexao
+                  th:unless="${veiculos.isEmpty() or centrosDeCusto.isEmpty()}">
+
+                <div class="mb-3">
+                    <label for="veiculoId" class="form-label">Veículo</label>
+                    <!-- So os DISPONIVEIS da empresa: a lista ja vem filtrada
+                         do banco. O servidor confere de novo no envio. -->
+                    <select id="veiculoId" th:field="*{veiculoId}"
+                            class="form-select form-select-lg"
+                            th:classappend="${#fields.hasErrors('veiculoId')} ? 'is-invalid'"
+                            required>
+                        <option value="">Escolha...</option>
+                        <option th:each="veiculo : ${veiculos}"
+                                th:value="${veiculo.id}"
+                                th:text="|${veiculo.nome} (${veiculo.placaFormatada})|">
+                            Veículo (ABC-1D23)
+                        </option>
+                    </select>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('veiculoId')}"
+                         th:errors="*{veiculoId}">Erro</div>
+                </div>
+
+                <div class="mb-3">
+                    <!-- Regra 6: o nome do campo e o rotulo da empresa. -->
+                    <label for="centroCustoId" class="form-label"
+                           th:text="${logado.rotuloCcSingular}">Destino</label>
+                    <select id="centroCustoId" th:field="*{centroCustoId}"
+                            class="form-select form-select-lg"
+                            th:classappend="${#fields.hasErrors('centroCustoId')} ? 'is-invalid'"
+                            required>
+                        <option value="">Escolha...</option>
+                        <option th:each="centroCusto : ${centrosDeCusto}"
+                                th:value="${centroCusto.id}"
+                                th:text="|${centroCusto.nome} (${centroCusto.cidadeComEstado})|">
+                            Nome (Cidade/UF)
+                        </option>
+                    </select>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('centroCustoId')}"
+                         th:errors="*{centroCustoId}">Erro</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="dataSaida" class="form-label">Data e hora da saída</label>
+                    <!-- Ja vem com a hora de agora. Pode ser alterada para
+                         tras (#006-RN005), para quem esqueceu de lancar na
+                         hora. -->
+                    <input type="datetime-local" id="dataSaida" th:field="*{dataSaida}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('dataSaida')} ? 'is-invalid'"
+                           required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('dataSaida')}"
+                         th:errors="*{dataSaida}">Erro</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="observacao" class="form-label">
+                        Observação <span class="text-secondary fw-normal">(opcional)</span>
+                    </label>
+                    <!-- autocapitalize="sentences", e nao "none": aqui o
+                         motorista escreve uma frase, e a maiuscula no comeco
+                         ajuda. O "none" e para campo que o sistema COMPARA,
+                         como login e placa. -->
+                    <textarea id="observacao" th:field="*{observacao}" rows="2"
+                              class="form-control form-control-lg" maxlength="500"
+                              autocapitalize="sentences"
+                              th:classappend="${#fields.hasErrors('observacao')} ? 'is-invalid'"></textarea>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('observacao')}"
+                         th:errors="*{observacao}">Erro</div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg py-3">
+                        Registrar saída
+                    </button>
+                    <a th:href="@{/lancamentos}" class="btn btn-outline-secondary btn-lg">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+            <a th:href="@{/lancamentos}" class="btn btn-link px-0"
+               th:if="${veiculos.isEmpty() or centrosDeCusto.isEmpty()}">Voltar</a>
+
+        </div>
+    </div>
+
+</main>
+
+<script th:src="@{/js/aviso-sem-conexao.js}"></script>
+
+</body>
+</html>

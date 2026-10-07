@@ -15,9 +15,10 @@ import org.springframework.web.bind.annotation.GetMapping;
  * que decide o destino. Concentrar a decisao num unico metodo evita que a
  * regra fique espalhada e comecem a divergir.
  *
- * As telas /painel e /lancamentos sao PROVISORIAS: existem para o
- * redirecionamento ter para onde ir e serao substituidas pelos cards das
- * proximas funcionalidades.
+ * A tela /painel e PROVISORIA: existe para o redirecionamento ter para onde
+ * ir e sera substituida pelos cards das proximas funcionalidades. A
+ * /lancamentos, do Motorista, deixou de ser provisoria no card #006 e mora
+ * no UsoVeiculoController.
  */
 @Controller
 public class InicioController {
@@ -56,12 +57,5 @@ public class InicioController {
     public String painel(@AuthenticationPrincipal UsuarioAutenticado logado, Model model) {
         model.addAttribute("logado", logado);
         return "painel/painel";
-    }
-
-    /** Tela inicial do Motorista. Provisoria. */
-    @GetMapping("/lancamentos")
-    public String lancamentos(@AuthenticationPrincipal UsuarioAutenticado logado, Model model) {
-        model.addAttribute("logado", logado);
-        return "painel/lancamentos";
     }
 }

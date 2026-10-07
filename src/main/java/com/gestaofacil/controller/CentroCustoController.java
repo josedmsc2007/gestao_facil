@@ -96,9 +96,9 @@ public class CentroCustoController {
      *
      * @Valid aplica as anotacoes do CentroCustoForm (obrigatorios e
      * tamanhos). O BindingResult PRECISA vir logo depois do objeto validado -
-     * em outra posicao o Spring lanca excecao em vez de preencher. A unica
-     * regra que uma anotacao nao alcanca e a sigla do estado, conferida em
-     * validarRegras.
+     * em outra posicao o Spring lanca excecao em vez de preencher. As regras
+     * que uma anotacao nao alcanca (sigla do estado e nome repetido) sao
+     * conferidas em validarRegras.
      */
     @PostMapping
     public String cadastrar(@AuthenticationPrincipal UsuarioAutenticado logado,
@@ -107,7 +107,7 @@ public class CentroCustoController {
                             Model model,
                             RedirectAttributes atributos) {
 
-        validarRegras(centroCustoForm, resultado);
+        validarRegras(centroCustoForm, resultado, logado.getEmpresaId(), null);
 
         if (resultado.hasErrors()) {
             return prepararFormulario(model, logado,
@@ -156,7 +156,7 @@ public class CentroCustoController {
         // quando ela for redesenhada com erros.
         centroCustoForm.setId(id);
 
-        validarRegras(centroCustoForm, resultado);
+        validarRegras(centroCustoForm, resultado, logado.getEmpresaId(), id);
 
         if (resultado.hasErrors()) {
             return prepararFormulario(model, logado,
@@ -214,17 +214,35 @@ public class CentroCustoController {
        ================================================================== */
 
     /**
-     * A sigla do estado precisa existir (#005-RN001).
+     * Regras que valem no cadastro E na edicao.
      *
+     * A SIGLA DO ESTADO PRECISA EXISTIR (#005-RN001)
      * Nao basta a tela oferecer so as 27 siglas na caixa de selecao: o que
      * chega no POST e texto vindo do navegador, e qualquer pessoa consegue
      * alterar isso. Esta conferencia e o que de fato impede um "XX" na coluna
      * estado - o mesmo raciocinio da lista de perfis do card #003.
+     *
+     * O NOME E UNICO NA EMPRESA (#005-RN006)
+     * Quem sabe comparar os nomes e o CentroCustoService; aqui a resposta so
+     * vira mensagem no campo. A mensagem nao leva o rotulo da empresa:
+     * "Ja existe uma Obra" e "Ja existe um Contrato" nao cabem na mesma frase
+     * (regra 6).
+     *
+     * @param idEmEdicao null no cadastro; na edicao, o id do proprio registro.
      */
-    private void validarRegras(CentroCustoForm form, BindingResult resultado) {
+    private void validarRegras(CentroCustoForm form, BindingResult resultado,
+                               Long empresaId, Long idEmEdicao) {
+
         if (form.getEstado() != null && !UnidadesFederativas.valida(form.getEstado())) {
             resultado.rejectValue("estado", "estado.invalido",
                     "Escolha um estado da lista.");
+        }
+
+        if (form.getNome() != null
+                && centroCustoService.nomeJaUsado(empresaId, form.getNome(), idEmEdicao)) {
+            resultado.rejectValue("nome", "nome.duplicado",
+                    "Já existe um cadastro com este nome nesta empresa. Escolha outro"
+                            + " nome ou edite o cadastro que já existe.");
         }
     }
 

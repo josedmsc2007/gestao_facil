@@ -142,6 +142,67 @@ public class VeiculoService {
                 || veiculo.getStatus() == StatusVeiculo.INATIVO;
     }
 
+    /* ==================================================================
+       Status calculado pela saida e pela devolucao (#006-RN003)
+
+       Os dois metodos abaixo sao chamados pelo UsoVeiculoService, DENTRO da
+       transacao dele. Nenhum controller os chama, e nenhum formulario tem
+       campo de status: e a regra 2 do projeto.
+       ================================================================== */
+
+    /**
+     * O veiculo saiu com um motorista: DISPONIVEL vira EM_USO.
+     *
+     * So sai veiculo DISPONIVEL. Um EM_USO ja esta na rua, um EM_MANUTENCAO
+     * esta na oficina e um INATIVO saiu da frota. A tela de saida so oferece
+     * os disponiveis, mas entre abrir a tela e tocar no botao outro motorista
+     * pode ter levado o mesmo veiculo - por isso a conferencia e aqui, com a
+     * linha travada (ver findParaMudarStatusByIdAndEmpresaId).
+     *
+     * @throws LancamentoRecusadoException quando o veiculo nao esta disponivel
+     */
+    @Transactional
+    public Veiculo marcarComoEmUso(Long veiculoId, Long empresaId) {
+
+        Veiculo veiculo = buscarParaMudarStatus(veiculoId, empresaId);
+
+        if (veiculo.getStatus() != StatusVeiculo.DISPONIVEL) {
+            throw new LancamentoRecusadoException(
+                    "O veículo " + veiculo.getNome() + " está "
+                            + veiculo.getStatus().getRotulo().toLowerCase()
+                            + " e não pode sair agora. Escolha outro veículo.");
+        }
+
+        veiculo.setStatus(StatusVeiculo.EM_USO);
+        return veiculoRepository.save(veiculo);
+    }
+
+    /**
+     * O motorista devolveu o veiculo: EM_USO volta para DISPONIVEL.
+     *
+     * So mexe em quem esta EM_USO. Hoje nao ha como o veiculo estar em outro
+     * status com uma saida em aberto (desativar um veiculo em uso e
+     * recusado), mas quando a manutencao (#008) chegar pode haver: e uma
+     * devolucao nao pode tirar da oficina um veiculo EM_MANUTENCAO.
+     */
+    @Transactional
+    public void marcarComoDisponivel(Long veiculoId, Long empresaId) {
+
+        Veiculo veiculo = buscarParaMudarStatus(veiculoId, empresaId);
+
+        if (veiculo.getStatus() == StatusVeiculo.EM_USO) {
+            veiculo.setStatus(StatusVeiculo.DISPONIVEL);
+            veiculoRepository.save(veiculo);
+        }
+    }
+
+    /** Como o buscarNaEmpresa, mas travando a linha ate o fim da transacao. */
+    private Veiculo buscarParaMudarStatus(Long veiculoId, Long empresaId) {
+        return veiculoRepository.findParaMudarStatusByIdAndEmpresaId(veiculoId, empresaId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Veículo não encontrado na empresa do usuário logado."));
+    }
+
     /**
      * A busca que TODO metodo desta classe usa (regra 1 do projeto).
      *

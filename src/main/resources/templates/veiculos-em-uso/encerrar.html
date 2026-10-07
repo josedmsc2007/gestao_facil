@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Encerrar saída')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <h1 class="h4 mb-3">Encerrar saída</h1>
+
+            <p class="text-secondary">
+                Você vai registrar a devolução deste veículo no lugar do motorista.
+            </p>
+
+            <div class="alert alert-danger" role="alert" th:if="${erro}"
+                 th:text="${erro}">Ação recusada.</div>
+
+            <!-- Estes dados sao so mostrados: aqui eles nao mudam. -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p class="text-secondary small mb-1">Veículo em uso</p>
+                    <p class="h5 mb-1" th:text="${uso.veiculo.nome}">Veículo</p>
+                    <p class="font-monospace mb-3"
+                       th:text="${uso.veiculo.placaFormatada}">ABC-1D23</p>
+
+                    <p class="mb-1">
+                        <span class="text-secondary">Motorista:</span>
+                        <span th:text="${uso.usuario.nome}">Nome</span>
+                        <span class="badge text-bg-warning"
+                              th:unless="${uso.usuario.ativo}">Desativado</span>
+                    </p>
+                    <p class="mb-1">
+                        <span class="text-secondary"
+                              th:text="|${logado.rotuloCcSingular}:|">Destino:</span>
+                        <span th:text="${uso.centroCusto.nome}">Nome</span>
+                    </p>
+                    <p class="mb-0">
+                        <span class="text-secondary">Saída:</span>
+                        <span th:text="${#temporals.format(uso.dataSaida, 'dd/MM/yyyy HH:mm')}">
+                            01/10/2026 07:30
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <form th:object="${devolucaoForm}"
+                  th:action="@{/veiculos-em-uso/{id}/encerrar(id=${uso.id})}" method="post">
+
+                <div class="mb-4">
+                    <label for="dataDevolucao" class="form-label">Data e hora da devolução</label>
+                    <input type="datetime-local" id="dataDevolucao" th:field="*{dataDevolucao}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('dataDevolucao')} ? 'is-invalid'"
+                           required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('dataDevolucao')}"
+                         th:errors="*{dataDevolucao}">Erro</div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger btn-lg py-3">
+                        Encerrar saída
+                    </button>
+                    <a th:href="@{/veiculos-em-uso}" class="btn btn-outline-secondary btn-lg">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

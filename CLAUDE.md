@@ -21,8 +21,8 @@ entregues ao cliente e ao professor — não os edite.
 
 ## Estado atual
 
-**Pronto: cards #001, #001.1, #003, #002, #004 e #005, com 181 testes.** O #002
-foi feito depois do #003, fora da ordem dos números.
+**Pronto: cards #001, #001.1, #003, #002, #004, #005 e #006, com 235 testes.**
+O #002 foi feito depois do #003, fora da ordem dos números.
 
 - **#001 e #001.1, login:** autenticação com isolamento por empresa, bloqueio
   por tentativas, logout, troca obrigatória de senha, aviso de tentativas
@@ -51,7 +51,44 @@ foi feito depois do #003, fora da ordem dos números.
   reativação pelo campo `ativo`. O estado é uma caixa de seleção com as 27
   siglas (`service/UnidadesFederativas`), conferida de novo no servidor. As
   telas não escrevem "Obra" em lugar nenhum: tudo vem de
-  `logado.getRotuloCcSingular()` / `getRotuloCcPlural()` (regra 6)
+  `logado.getRotuloCcSingular()` / `getRotuloCcPlural()` (regra 6). O nome é
+  único por empresa (#005-RN006), contando ativos e inativos: a comparação
+  ignora maiúsculas/minúsculas e espaços nas pontas
+  (`CentroCustoService.nomeJaUsado`), mas o nome é **gravado como foi
+  digitado**, porque é ele que aparece na tela
+- **#006, saída e devolução**, em duas partes:
+  - **Motorista** (`/lancamentos` e `/saidas/**`, `UsoVeiculoController`):
+    `/lancamentos` é a tela inicial do motorista e mostra o veículo em aberto
+    com o botão de devolução, ou o botão de saída; `/saidas/nova` registra a
+    saída (veículo `DISPONIVEL`, centro de custo ativo, data/hora, observação
+    opcional) e `/saidas/devolucao` fecha a saída em aberto. Nenhuma rota tem
+    `{id}`: a saída é sempre a de quem está logado, então um motorista não
+    alcança a de outro. Sem conexão, `static/js/aviso-sem-conexao.js` avisa e
+    cancela o envio (#006-RN006)
+  - **Administrador** (`/veiculos-em-uso/**`, `VeiculoEmUsoController`):
+    `/veiculos-em-uso` lista as saídas em aberto da empresa (veículo,
+    motorista, centro de custo, data de saída) e avisa quando o motorista está
+    desativado (RF03). O botão "Encerrar saída" de cada linha é um link para
+    `GET /veiculos-em-uso/{id}/encerrar`, a tela de confirmação
+    (`veiculos-em-uso/encerrar.html`, no molde de `saidas/devolucao.html`):
+    mostra veículo, motorista, destino e data de saída, e o campo da data de
+    devolução com a hora de agora. Quem fecha a saída é o `POST` dessa mesma
+    rota (RF04), que reaproveita o `DevolucaoForm` e redesenha a tela com o
+    erro quando a data é recusada. O Administrador pode encerrar **qualquer**
+    saída em aberto da empresa, com o motorista ativo ou desativado, e nenhum
+    motivo é guardado. Saída de outra empresa ou já fechada responde 404, no
+    GET e no POST. Se o motorista devolver e o Administrador encerrar a mesma
+    saída no mesmo instante, vale a última gravação: o veículo fica
+    `DISPONIVEL` de qualquer jeito, mas "quem devolveu" pode ser qualquer um
+    dos dois
+  - As regras ficam no `UsoVeiculoService`, que recusa com
+    `LancamentoRecusadoException`. As duas portas da devolução
+    (`registrarDevolucao` e `encerrarSaida`) terminam no mesmo `fecharSaida`,
+    então valem as mesmas regras de data (RN007). O status muda em
+    `VeiculoService.marcarComoEmUso` / `marcarComoDisponivel` (regra 2).
+    `data_registro` é preenchida pelo construtor de `UsoVeiculo`, e
+    `data_registro_devolucao` e `usuario_devolucao_id` por
+    `UsoVeiculo.registrarDevolucao` (regra 4 e RN008)
 - **Carga inicial** (`config/CargaInicial`), em duas etapas independentes:
   - empresa reservada `gestao-facil` com três Operadores (`jose.lopes`,
     `victor.ruan`, `leonardo.silva`, senha `operador12345`, com troca
@@ -62,18 +99,21 @@ foi feito depois do #003, fora da ordem dos números.
 
 **Ainda não existe:**
 
-- as entidades e CRUDs de uso, abastecimento, manutenção e anexo de manutenção
-- as transições de status do veículo para `EM_USO` (#006) e `EM_MANUTENCAO`
-  (#008). Hoje só existem `DISPONIVEL` e `INATIVO` na prática
+- as entidades e CRUDs de abastecimento, manutenção e anexo de manutenção
+- a transição de status do veículo para `EM_MANUTENCAO` (#008). Hoje existem
+  `DISPONIVEL`, `EM_USO` e `INATIVO` na prática
+- tela que mostre o histórico das saídas já fechadas. `usuario_devolucao_id`
+  e `data_registro_devolucao` são gravados, mas ainda não aparecem em tela
+  nenhuma: ficam para os relatórios
 - relatórios (RF09)
 - forma de criar os Operadores em produção: hoje só a carga inicial os cria,
   e ela é desligada em produção (`seed.habilitado=false`)
 - derrubar a sessão de quem já está logado quando a empresa é inativada. A
   inativação barra o **próximo** login e não a sessão aberta
 
-**Provisório, será substituído pelos próximos cards:** as telas `/painel`
-(administrador) e `/lancamentos` (motorista), que existem só para o
-redirecionamento por perfil ter destino.
+**Provisório, será substituído pelos próximos cards:** a tela `/painel`
+(administrador), que existe só para o redirecionamento por perfil ter destino,
+e o botão desligado de abastecimento em `/lancamentos` (#007).
 
 **Divergências a resolver com o PO:**
 
@@ -84,11 +124,8 @@ redirecionamento por perfil ter destino.
   sozinha.
 - o #005 lista os campos do centro de custo sem `codigo`, que a versão antiga
   do RF05 trazia como opcional. O código segue o card e **não** tem a coluna.
-- o #005 não diz se dois centros de custo podem ter o mesmo nome na mesma
-  empresa. Hoje podem — não há restrição única. Dois nomes iguais ficam
-  indistinguíveis na tela de saída do #006, então vale decidir antes daquele
-  card.
-
+- #006: não há limite de quanto para trás a data de saída/devolução pode ir,
+  nem conferência de sobreposição com outro uso do mesmo veículo.
 ## Regras que o código precisa garantir
 
 1. **Isolamento por empresa (multi-tenant).** Toda consulta filtra pela empresa
@@ -125,7 +162,8 @@ Toda tabela, exceto `empresa`, tem `empresa_id`. O detalhamento dos campos está
 em `Modelo_de_Dados_Gestao_Facil.pdf` (atenção: o PDF usa fontes embutidas e
 não é legível por extração automática de texto).
 
-Existem hoje `empresa`, `usuario`, `anexo_usuario`, `veiculo` e `centro_custo`.
+Existem hoje `empresa`, `usuario`, `anexo_usuario`, `veiculo`, `centro_custo`
+e `uso_veiculo`.
 
 `veiculo` nasceu no #004 com `empresa_id`, `nome`, `ano`, `renavam`, `placa`,
 `tipo_combustivel` e `status`. Ela **não tem** o campo `ativo` das outras: o
@@ -136,6 +174,18 @@ informação acabariam se contradizendo.
 `endereco` (o único opcional) e `ativo`. Aqui o campo é um booleano, e não um
 status: centro de custo não tem situação calculada — ou está em uso, ou não
 está. `estado` guarda a sigla com 2 letras maiúsculas.
+
+`uso_veiculo` nasceu no #006 com `empresa_id`, `veiculo_id`,
+`centro_custo_id`, `usuario_id` (o motorista), `data_saida`, `data_devolucao`,
+`observacao` (opcional), `data_registro`, `data_registro_devolucao` e
+`usuario_devolucao_id`. Saída e devolução são **a mesma linha**: "em aberto" é
+`data_devolucao` nula, sem coluna de situação. `data_registro` é o momento em
+que a saída foi lançada e `data_registro_devolucao` o da devolução;
+`usuario_devolucao_id` é quem lançou a devolução, o motorista ou o
+Administrador no lugar dele (#006-RN008). As duas últimas são nulas enquanto a
+saída está em aberto **e nas devoluções antigas**, lançadas antes de as
+colunas existirem: tela que as mostrar precisa tratar o nulo. Não há
+identificador local, porque não há lançamento offline (#006-RN006).
 
 Colunas acrescentadas pelos cards às tabelas que já existiam:
 
@@ -154,13 +204,18 @@ coluna nova é necessária". Sem elas, porém, não haveria como atender a RF06
 
 Restrições únicas no banco, não só na tela: `(empresa_id, login)` e
 `(empresa_id, cpf)` em `usuario`; `(empresa_id, placa)` e
-`(empresa_id, renavam)` em `veiculo`; `identificador` em `empresa`.
+`(empresa_id, renavam)` em `veiculo`; `(empresa_id, nome)` em `centro_custo`;
+`identificador` em `empresa`.
+
+A de `centro_custo` é a única que **não cobre a regra inteira**: o banco
+compara texto, então para ele "Obra Norte" e "obra norte" são diferentes. Quem
+barra a variação de maiúsculas é o `CentroCustoService`; a restrição só segura
+dois envios simultâneos do mesmo nome exato.
 
 `usuario.perfil` aceita `OPERADOR`, `ADMINISTRADOR` e `MOTORISTA`;
 `veiculo.status` aceita `DISPONIVEL`, `EM_USO`, `EM_MANUTENCAO` e `INATIVO`;
 `veiculo.tipo_combustivel` aceita os valores de `TipoCombustivel`. Todos
-gravados como texto. `centro_custo` não tem restrição única: dois centros de
-custo de mesmo nome convivem na mesma empresa (ver divergências).
+gravados como texto.
 
 **Confiram `Empresa` e `Usuario` contra o PDF.** Como ele não é legível por
 extração automática, os campos das duas entidades foram deduzidos dos
@@ -189,7 +244,41 @@ uma classe de métodos estáticos em `service/`: `ValidadorDeCpf` (CPF só com
 números), `FormatoDeVeiculo` (placa em maiúsculas sem hífen, RENAVAM com 11
 dígitos) e `UnidadesFederativas` (sigla do estado em maiúsculas). Sem isso `abc-1d23` e `ABC1D23` seriam duas placas diferentes para a
 restrição única, e o mesmo veículo entraria duas vezes. A mesma função
-normaliza na conferência de duplicidade e na gravação.
+normaliza na conferência de duplicidade e na gravação. A exceção é o nome do
+centro de custo, que aparece na tela e por isso não é gravado normalizado: lá
+só a **comparação** ignora a caixa (`existsByEmpresaIdAndNomeIgnoreCase`).
+
+### Lançamentos (#006, e o modelo para #007 e #008)
+
+- **As regras ficam no service, que confere tudo antes de gravar qualquer
+  coisa.** Uma recusa nunca deixa trabalho pela metade (veículo `EM_USO` sem
+  saída). A recusa sai como `LancamentoRecusadoException`, com a mensagem
+  pronta, e o controller a põe em `erro` e redesenha o formulário.
+- **Id de outra empresa no formulário responde 404**, conferido pelo
+  controller com `findByIdAndEmpresaId` antes de chamar o service.
+- **O status do veículo só muda pelo `VeiculoService`**
+  (`marcarComoEmUso`, `marcarComoDisponivel`), que busca o veículo com trava
+  (`findParaMudarStatusByIdAndEmpresaId`, um `select ... for update`). É a
+  trava que impede dois motoristas de saírem com o mesmo veículo no mesmo
+  instante.
+- **Tela do motorista não tem `{id}` na rota.** O lançamento em aberto é
+  achado pela sessão (`logado.getId()`), então não existe endereço para
+  adulterar. Só a tela do Administrador leva o id do lançamento, e por isso
+  busca com `findByIdAndEmpresaId`.
+- **Campos que andam juntos são preenchidos por um método só da entidade**
+  (`UsoVeiculo.registrarDevolucao`), e não por setters soltos: ninguém grava
+  a data da devolução sem registrar quem foi e quando.
+- **Ação que fecha um lançamento passa por uma tela de confirmação** (encerrar
+  saída): o botão da lista é um link GET que só abre a tela; quem grava é o
+  POST dela. GET e POST com id começam pela mesma busca
+  (`VeiculoEmUsoController.buscarEmAbertoNaEmpresa`), com 404.
+- **Data e hora** usam `<input type="datetime-local">` e, no formulário,
+  `@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")`. O campo já vem com a hora
+  de agora, sem segundos. `data_registro` não tem setter nem campo de
+  formulário.
+- **Tela que exige conexão** inclui a caixa `id="aviso-sem-conexao"`, marca o
+  formulário com `data-exige-conexao` e carrega `js/aviso-sem-conexao.js`,
+  que também desliga o botão depois do primeiro toque.
 
 ### A empresa na autenticação
 
@@ -345,7 +434,7 @@ nos campos (abaixo disso o iPhone dá zoom sozinho).
 
 ### Mensagens na tela
 
-Três formatos, todos com `alert` do Bootstrap:
+Todos com `alert` do Bootstrap:
 
 | Situação | Como |
 |---|---|
@@ -353,6 +442,7 @@ Três formatos, todos com `alert` do Bootstrap:
 | Erro de validação de campo | `BindingResult` + `th:errors="*{campo}"` e `is-invalid` |
 | Confirmação após ação | `RedirectAttributes.addFlashAttribute("mensagem", ...)` |
 | Ação recusada por regra de negócio | `addFlashAttribute("erro", ...)`, explicando o motivo e o que fazer |
+| Formulário recusado por regra de negócio | `model.addAttribute("erro", ...)` e a mesma tela de volta, com o que foi digitado |
 
 Mensagem de login incorreto é **genérica** (#001-RF04) e vive numa constante no
 provider — nunca diga qual campo está errado. A única exceção deliberada é a
@@ -370,8 +460,28 @@ Todo CRUD novo precisa de pelo menos um teste que prove o isolamento por
 empresa: um usuário da empresa A não alcança registro da empresa B. E, desde o
 #002, um que prove que o Operador leva 403 na tela nova.
 
+Tela que mostra dado de um relacionamento (o nome do veículo de uma saída)
+precisa também de um teste **sem** `@Transactional` e com
+`spring.jpa.open-in-view=false`, em banco próprio: o modelo é o
+`UsoVeiculoComoEmProducaoTests`. O motivo está na primeira armadilha abaixo.
+
 ### Armadilhas que já custaram tempo
 
+- **Relacionamento `LAZY` usado na tela passa nos testes e quebra em
+  produção.** Os testes são `@Transactional` e o `application.properties` deles
+  não tem `open-in-view=false`, então a conexão fica aberta e o
+  `LazyInitializationException` nunca aparece. Consulta cujo resultado vai
+  para a tela traz o relacionamento junto com `@EntityGraph` (ver
+  `UsoVeiculoRepository`).
+- **Restrição única nova em tabela que já tem dados** (`ddl-auto=update`): se
+  já houver duplicados, o PostgreSQL recusa criar a restrição e o Hibernate só
+  escreve o erro no console. Ao subir o #005 com a RN006, confiram no pgAdmin
+  se `uk_centro_custo_empresa_nome` existe; se não, há nomes repetidos para
+  corrigir à mão.
+- **Datas usam o relógio e o fuso do servidor** (`LocalDateTime.now()`). Num
+  servidor em UTC, a hora sugerida na saída viria 3 horas adiantada e a
+  conferência de "data no futuro" recusaria a hora certa do motorista. Em
+  produção, subir a aplicação com o fuso de Brasília.
 - **Coluna `NOT NULL` nova em tabela que já tem dados** (`ddl-auto=update`):
   o PostgreSQL recusa o `alter table` e o Hibernate só escreve o erro no
   console e segue em frente. O sistema quebra depois, longe da causa. Use
@@ -390,7 +500,10 @@ empresa: um usuário da empresa A não alcança registro da empresa B. E, desde 
   só o texto de exemplo dentro de um `th:text` é substituído. Um comentário de
   template que citava o rótulo de um cliente como exemplo aparecia na página de
   todos os outros, e dois testes do #005 pegaram isso. Exemplo de rótulo, só em
-  comentário de `.java`.
+  comentário de `.java`. O inverso também acontece: um teste com
+  `containsString` **passa por acaso** quando a palavra procurada está num
+  comentário (era o caso do `painelAbreEUsaORotulo`). Confira a palavra junto
+  com a tag, como `">Obras</a>"`.
 - **`.param(...)` repetido no MockMvc:** quando um método auxiliar já envia o
   campo e o teste manda outro valor com o mesmo nome, o Spring fica com o
   **primeiro** e o teste passa sem testar nada. Monte o POST inteiro à mão

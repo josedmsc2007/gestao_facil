@@ -111,6 +111,36 @@ public class CentroCustoService {
     }
 
     /**
+     * #005-RN006: ja existe OUTRO centro de custo com este nome na empresa?
+     *
+     * A COMPARACAO IGNORA DUAS COISAS
+     *   - espacos nas pontas: o trim() daqui;
+     *   - maiusculas e minusculas: o IgnoreCase da consulta.
+     * Assim "Obra Norte" e "obra norte " sao o mesmo nome.
+     *
+     * E a mesma ideia da placa no card #004 (normalizar antes de comparar),
+     * com uma diferenca: a placa e GRAVADA normalizada, o nome nao. Ele
+     * aparece na tela do jeito que o Administrador escreveu, entao so a
+     * comparacao e que desconsidera a caixa das letras.
+     *
+     * Ativo ou inativo, tanto faz: o inativo continua existindo (regra 3) e
+     * pode ser reativado a qualquer momento.
+     *
+     * @param idEmEdicao null no cadastro; na edicao, o id do proprio registro,
+     *                   para ele nao ser acusado de repetir o proprio nome.
+     */
+    public boolean nomeJaUsado(Long empresaId, String nome, Long idEmEdicao) {
+
+        String nomeLimpo = nome.trim();
+
+        if (idEmEdicao == null) {
+            return centroCustoRepository.existsByEmpresaIdAndNomeIgnoreCase(empresaId, nomeLimpo);
+        }
+        return centroCustoRepository.existsByEmpresaIdAndNomeIgnoreCaseAndIdNot(
+                empresaId, nomeLimpo, idEmEdicao);
+    }
+
+    /**
      * A busca que TODO metodo desta classe usa (regra 1 do projeto).
      *
      * Nunca findById(id) sozinho: a consulta leva sempre a empresa junto. Um

@@ -12,12 +12,9 @@
         Olá, <strong th:text="${logado.nome}">Nome</strong> — administrador.
     </p>
 
-    <!-- As acoes ja entregues. Sem este bloco nao existe caminho ate as telas:
-         as rotas internas nao aparecem em lugar nenhum.
-
-         A tela "Contas bloqueadas", que ficava aqui desde o card #001, deixou
-         de existir: desbloquear virou um botao dentro da lista de usuarios
-         (#003-RF06), junto com as outras acoes sobre a mesma pessoa. -->
+    <!-- Botoes para chegar nas telas que ja existem. Sem eles, dava pra acessar
+         /usuarios ou /veiculos digitando o endereco na mao, mas nao tinha
+         nenhum link clicavel ate aqui. -->
     <div class="d-grid gap-2 col-md-5 mt-4">
         <a th:href="@{/usuarios}" class="btn btn-primary btn-lg py-3">
             Usuários
@@ -25,8 +22,11 @@
         <a th:href="@{/veiculos}" class="btn btn-primary btn-lg py-3">
             Veículos
         </a>
-        <!-- Regra 6 do projeto: o nome do botao vem do cadastro da empresa.
-             Para a Construtora Teste sai "Obras"; para outra, "Rotas". -->
+        <a th:href="@{/veiculos-em-uso}" class="btn btn-primary btn-lg py-3">
+            Veículos em uso
+        </a>
+        <!-- O texto deste botao vem do que a propria empresa cadastrou, nao e
+             fixo no codigo. Cada empresa ve o nome que escolheu. -->
         <a th:href="@{/centros-de-custo}" class="btn btn-primary btn-lg py-3"
            th:text="${logado.rotuloCcPlural}">
             Obras
@@ -34,18 +34,14 @@
     </div>
 
     <!--
-        O RESTO DA TELA AINDA E PROVISORIO.
-
-        Ela existe para o redirecionamento por perfil (RN006) ter um destino.
-        Os cadastros de verdade vem nos proximos cards.
-
-        Repare que o texto abaixo usa o rotulo da empresa, e nao a palavra
-        "Obras" escrita a mao - e a regra 6 do projeto. Para a construtora
-        aparece "obras"; para uma transportadora apareceria "rotas".
+        O resto desta tela ainda e provisorio: ela so existe para o
+        administrador ter para onde ir depois do login. As telas de verdade
+        vao chegando nos proximos cards.
     -->
     <div class="alert alert-secondary mt-4" role="alert">
-        Esta tela ainda está em construção. Os lançamentos de saída,
-        abastecimento e manutenção e os relatórios entram nos próximos cards.
+        Esta tela ainda está em construção. A saída e a devolução de veículos são
+        registradas pelo motorista; os lançamentos de abastecimento e manutenção
+        e os relatórios entram nos próximos cards.
     </div>
 
 </main>

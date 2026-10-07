@@ -90,6 +90,16 @@ public class SecurityConfig {
                         .requestMatchers("/painel").hasRole("ADMINISTRADOR")
                         .requestMatchers("/lancamentos").hasRole("MOTORISTA")
 
+                        // #006-RN004: saida e devolucao de veiculo, so o
+                        // Motorista. O Administrador nao lanca saida.
+                        .requestMatchers("/saidas/**").hasRole("MOTORISTA")
+
+                        // #006-RN009: o painel de veiculos em uso e o
+                        // encerramento de saida, so o Administrador. Fica
+                        // fora de /saidas/** justamente por ser de outro
+                        // perfil.
+                        .requestMatchers("/veiculos-em-uso/**").hasRole("ADMINISTRADOR")
+
                         // Telas de administracao de usuarios, incluindo o
                         // desbloqueio de contas (RN005).
                         .requestMatchers("/usuarios/**").hasRole("ADMINISTRADOR")

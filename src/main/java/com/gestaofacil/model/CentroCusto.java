@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * Centro de custo: o lugar (ou contrato, ou rota) a que o uso de um veiculo
@@ -31,7 +32,27 @@ import jakarta.persistence.Table;
  * custo, e e isso que permite o relatorio de custo por centro de custo (RF09).
  */
 @Entity
-@Table(name = "centro_custo")
+@Table(
+        name = "centro_custo",
+        /*
+         * #005-RN006: o nome e unico DENTRO da empresa, como o login em
+         * usuario e a placa em veiculo. Duas empresas podem ter um centro de
+         * custo "Sede"; a mesma empresa, nao - na tela de saida (#006) os dois
+         * ficariam indistinguiveis.
+         *
+         * ATENCAO AO QUE ESTA LINHA GARANTE E AO QUE NAO GARANTE
+         * O banco compara TEXTO: para ele "Obra Norte" e "obra norte" sao
+         * diferentes. A placa escapa disso porque e gravada sempre em
+         * maiusculas; o nome nao pode ser, porque e ele que aparece na tela
+         * do jeito que o Administrador escreveu. Entao a comparacao sem
+         * maiusculas/minusculas e feita pelo CentroCustoService
+         * (nomeJaUsado), e esta restricao fica como a ultima barreira para o
+         * caso de duas abas enviarem o MESMO nome ao mesmo tempo.
+         */
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_centro_custo_empresa_nome",
+                columnNames = {"empresa_id", "nome"})
+)
 public class CentroCusto {
 
     @Id
@@ -48,7 +69,10 @@ public class CentroCusto {
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    /** #005-RN001. Ex.: "Residencial Parque das Arvores". */
+    /**
+     * #005-RN001 e RN006. Ex.: "Residencial Parque das Arvores". Unico por
+     * empresa - ver a restricao la em cima.
+     */
     @Column(nullable = false, length = 120)
     private String nome;
 

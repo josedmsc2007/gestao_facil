@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Lançamentos')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <h1 class="h4">Meus lançamentos</h1>
+            <p class="text-secondary">
+                Olá, <strong th:text="${logado.nome}">Nome</strong>.
+            </p>
+
+            <!-- Confirmacao de uma acao, enviada por addFlashAttribute. -->
+            <div class="alert alert-success" role="alert" th:if="${mensagem}"
+                 th:text="${mensagem}">Saída registrada.</div>
+
+            <!-- Acao recusada por regra de negocio. -->
+            <div class="alert alert-danger" role="alert" th:if="${erro}"
+                 th:text="${erro}">Ação recusada.</div>
+
+            <!--
+                A TELA TEM DUAS CARAS, e o motorista so ve uma (#006-RN002).
+
+                Com veiculo em aberto: mostra QUAL veiculo e o botao de
+                devolucao, que e a unica coisa que ele pode fazer agora.
+
+                Sem veiculo em aberto: mostra o botao de saida.
+
+                Quem decide e o controller, que manda "usoEmAberto" preenchido
+                ou nulo. Poucos elementos e botoes grandes: a tela e usada em
+                pe, no celular.
+            -->
+            <div th:if="${usoEmAberto != null}">
+                <div class="card border-primary mb-3">
+                    <div class="card-body">
+                        <p class="text-secondary small mb-1">Você está com o veículo</p>
+                        <p class="h5 mb-1" th:text="${usoEmAberto.veiculo.nome}">Veículo</p>
+                        <p class="font-monospace mb-3"
+                           th:text="${usoEmAberto.veiculo.placaFormatada}">ABC-1D23</p>
+
+                        <!-- Regra 6: o nome do campo e o rotulo que a empresa
+                             cadastrou, e nao uma palavra fixa. -->
+                        <p class="mb-1">
+                            <span class="text-secondary"
+                                  th:text="|${logado.rotuloCcSingular}:|">Destino:</span>
+                            <span th:text="${usoEmAberto.centroCusto.nome}">Nome</span>
+                        </p>
+                        <p class="mb-0">
+                            <span class="text-secondary">Saída:</span>
+                            <span th:text="${#temporals.format(usoEmAberto.dataSaida, 'dd/MM/yyyy HH:mm')}">
+                                01/10/2026 07:30
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <a th:href="@{/saidas/devolucao}" class="btn btn-primary btn-lg py-3">
+                        Registrar devolução
+                    </a>
+                </div>
+            </div>
+
+            <div th:if="${usoEmAberto == null}">
+                <p>Você não está com nenhum veículo no momento.</p>
+
+                <div class="d-grid">
+                    <a th:href="@{/saidas/nova}" class="btn btn-primary btn-lg py-3">
+                        Registrar saída de veículo
+                    </a>
+                </div>
+            </div>
+
+            <!-- O abastecimento e do proximo card (RF07). O botao desligado
+                 mostra onde ele vai ficar. -->
+            <div class="d-grid mt-3">
+                <button class="btn btn-outline-secondary btn-lg py-3" type="button" disabled>
+                    Registrar abastecimento (em breve)
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

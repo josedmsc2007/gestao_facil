@@ -49,7 +49,9 @@ public class EmpresaService {
             "login", "logout", "trocar-senha", "error",
             "painel", "lancamentos", "usuarios", "empresas",
             "css", "js", "imagens",
-            "veiculos", "centros-de-custo", "abastecimentos", "manutencoes", "relatorios");
+            "veiculos", "veiculos-em-uso", "centros-de-custo", "saidas", "abastecimentos",
+            "manutencoes",
+            "relatorios");
 
     /** Tamanho da coluna empresa.identificador. */
     private static final int TAMANHO_MAXIMO_DO_IDENTIFICADOR = 60;

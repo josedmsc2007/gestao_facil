@@ -160,8 +160,10 @@ class TelasLoginTests {
         mockMvc.perform(get("/painel").session(sessao))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Construtora do Teste")))
-                // regra 6 do projeto: o texto vem do rotulo da empresa
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("obras")));
+                // regra 6 do projeto: o texto do botao vem do rotulo da empresa.
+                // Confere o BOTAO (">Obras</a>") e nao a palavra solta, que
+                // tambem apareceria num comentario do template.
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(">Obras</a>")));
     }
 
     @Test

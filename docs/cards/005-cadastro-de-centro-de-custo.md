@@ -45,6 +45,11 @@ inativo, em vez de excluí-lo.
   cadastrado pela própria empresa (`empresa.rotulo_cc_singular` /
   `rotulo_cc_plural`), nunca pela palavra fixa "Obra" (regra 6 do
   projeto).
+- **RN006** – O nome do centro de custo é único por empresa (duas empresas
+  diferentes podem ter centros de custo com o mesmo nome, mas a mesma
+  empresa não pode ter dois com o nome igual). A comparação ignora
+  maiúsculas/minúsculas e espaços nas pontas, para não deixar cadastrar
+  "Obra Norte" e "obra norte " como se fossem diferentes.
 
 ## Critérios de aceitação
 
@@ -59,11 +64,17 @@ inativo, em vez de excluí-lo.
 - [ ] A tela usa o rótulo cadastrado pela empresa (ex.: "Obra"/"Obras"),
       nunca o texto fixo
 - [ ] Administrador não vê nem altera centros de custo de outra empresa
+- [ ] Sistema impede cadastrar dois centros de custo com o mesmo nome na
+      mesma empresa, mas aceita o mesmo nome em empresas diferentes
 
 ## Impacto no modelo de dados
 
 A tabela `centro_custo` já existe no modelo de dados. Campos previstos:
 `nome`, `cidade`, `estado`, `endereco`, `ativo` e `empresa_id`.
+
+Restrição única no banco por `(empresa_id, nome)`, nos mesmos moldes da
+restrição `(empresa_id, login)` do usuário (regra do card #001) e de
+placa/RENAVAM do card #004 — não basta validar na tela.
 
 > **Nota:** o rascunho original deste card chamava a funcionalidade de
 > "Cadastro de obras" e usava "obra" como o nome do conceito. Renomeei

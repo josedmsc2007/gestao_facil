@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Veículos em uso')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <h1 class="h4 mb-3">Veículos em uso</h1>
+
+    <p class="text-secondary">
+        Veículos de <strong th:text="${logado.empresaNome}">Empresa</strong> que saíram e
+        ainda não foram devolvidos. A devolução é registrada pelo motorista; use
+        <em>Encerrar saída</em> só quando ele não puder fazer isso.
+    </p>
+
+    <div class="alert alert-success" role="alert" th:if="${mensagem}"
+         th:text="${mensagem}">Saída encerrada.</div>
+
+    <div class="alert alert-danger" role="alert" th:if="${erro}"
+         th:text="${erro}">Ação recusada.</div>
+
+    <div class="alert alert-secondary" role="alert" th:if="${usos.isEmpty()}">
+        Nenhum veículo em uso neste momento.
+    </div>
+
+    <div class="table-responsive" th:unless="${usos.isEmpty()}">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Veículo</th>
+                <th scope="col">Motorista</th>
+                <!-- O nome desta coluna vem do cadastro da empresa. -->
+                <th scope="col" th:text="${logado.rotuloCcSingular}">Destino</th>
+                <th scope="col">Saída</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="uso : ${usos}">
+                <td>
+                    <span th:text="${uso.veiculo.nome}">Nome do veículo</span>
+                    <small class="d-block font-monospace text-secondary"
+                           th:text="${uso.veiculo.placaFormatada}">ABC-1D23</small>
+                </td>
+                <td>
+                    <span th:text="${uso.usuario.nome}">Nome do motorista</span>
+                    <small class="d-block" th:unless="${uso.usuario.ativo}">
+                        <span class="badge text-bg-warning">Motorista desativado</span>
+                    </small>
+                </td>
+                <td th:text="${uso.centroCusto.nome}">Nome do destino</td>
+                <td th:text="${#temporals.format(uso.dataSaida, 'dd/MM/yyyy HH:mm')}">
+                    01/10/2026 07:30
+                </td>
+                <td class="text-end">
+                    <!-- Este link so abre a tela de confirmacao; nada e
+                         gravado por ele. -->
+                    <a th:href="@{/veiculos-em-uso/{id}/encerrar(id=${uso.id})}"
+                       class="btn btn-sm btn-outline-danger">Encerrar saída</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a th:href="@{/painel}" class="btn btn-link px-0">Voltar ao painel</a>
+
+</main>
+
+</body>
+</html>
