@@ -27,6 +27,16 @@ todos os registros de uma vez, sem nenhuma forma de procurar. Conforme a
 empresa cadastra mais usuários, veículos e centros de custo, achar um registro
 específico fica lento.
 
+**Campos de senha (cards #001 e #003):** hoje a senha digitada aparece só como
+bolinhas, sem como conferir o que foi escrito. No celular, onde digitar é mais
+difícil, isso causa erros de digitação, principalmente na troca obrigatória de
+senha, em que a senha é escrita duas vezes.
+
+**Desativação de usuário (cards #003 e #006):** hoje o Administrador consegue
+desativar um Motorista que está com um veículo em uso. O veículo continua
+`EM_USO`, preso a uma pessoa que não consegue mais entrar no sistema, até que o
+Administrador lembre de encerrar a saída pelo painel de veículos em uso.
+
 ## Requisitos funcionais
 
 **#010-RF01 – Estado com busca no cadastro de centro de custo**
@@ -42,6 +52,15 @@ barra de busca para achar o município digitando parte do nome.
 As telas de listagem que podem ter muitos registros deverão ter uma barra de
 pesquisa. O usuário digita parte do texto e a lista mostra apenas os registros
 que combinam, sem diferença entre letras maiúsculas e minúsculas.
+
+**#010-RF04 – Mostrar e ocultar a senha**
+Os campos de senha deverão ter um ícone de olho. Ao clicar nele, a senha
+digitada passa a aparecer em texto; ao clicar de novo, ela volta a ficar
+oculta.
+
+**#010-RF05 – Desativação bloqueada com saída em aberto**
+O sistema não deverá permitir desativar um Motorista que tenha uma saída de
+veículo em aberto (sem devolução registrada).
 
 ## Regras de negócio
 
@@ -73,6 +92,25 @@ que combinam, sem diferença entre letras maiúsculas e minúsculas.
 - **RN010** – A pesquisa só muda o que aparece na tela: ela mostra apenas
   registros que o usuário já pode ver naquela listagem, da própria empresa, e
   não altera nenhum dado.
+- **RN011** – O ícone de olho aparece em todos os campos de senha do sistema:
+  a senha da tela de login e, na troca obrigatória de senha, a nova senha e a
+  confirmação.
+- **RN012** – A senha sempre começa oculta. Cada clique no olho alterna entre
+  mostrar e ocultar, e o ícone muda para indicar o estado atual.
+- **RN013** – O olho é um botão dentro do campo, grande o bastante para o toque
+  no celular, com texto alternativo ("Mostrar senha" e "Ocultar senha") para
+  quem usa leitor de tela.
+- **RN014** – Mostrar a senha só muda a exibição no navegador de quem está
+  digitando. Nada é enviado ao servidor nem gravado por causa disso.
+- **RN015** – A recusa vale para qualquer desativação de Motorista feita pela
+  tela de usuários. A mensagem explica o motivo e orienta o caminho: encerrar a
+  saída em "Veículos em uso" e só depois desativar o funcionário.
+- **RN016** – Motorista sem saída em aberto continua podendo ser desativado
+  normalmente. Depois que a saída é fechada, seja pela devolução do motorista
+  ou pelo encerramento do Administrador, a desativação passa a ser permitida.
+- **RN017** – Segue o mesmo princípio já usado para o veículo (#004): o sistema
+  não desativa o que está em uso, porque o status do veículo só muda por um
+  fato real, a devolução, e nunca pela desativação de quem está com ele.
 
 ## Critérios de aceitação
 
@@ -96,6 +134,19 @@ que combinam, sem diferença entre letras maiúsculas e minúsculas.
 - [ ] A lista é filtrada enquanto se digita, e apagar o texto mostra tudo
 - [ ] Sem resultado, a tela mostra a mensagem de que nada foi encontrado
 - [ ] A pesquisa nunca mostra registros de outra empresa
+- [ ] A tela de login tem o ícone de olho no campo de senha
+- [ ] A tela de troca de senha tem o ícone de olho na nova senha e na
+      confirmação
+- [ ] A senha começa oculta, e clicar no olho mostra o que foi digitado
+- [ ] Clicar de novo no olho oculta a senha
+- [ ] O botão do olho funciona com o toque no celular e tem texto alternativo
+- [ ] Mostrar a senha não impede o login nem a troca de senha de funcionarem
+- [ ] Sistema recusa desativar um Motorista com saída em aberto, explicando o
+      motivo na tela
+- [ ] A mensagem orienta a encerrar a saída em "Veículos em uso" primeiro
+- [ ] Depois de a saída ser fechada, o Motorista pode ser desativado
+- [ ] Motorista sem saída em aberto continua sendo desativado normalmente
+- [ ] O veículo continua `EM_USO` enquanto a recusa estiver valendo
 
 ## Impacto no modelo de dados
 
@@ -103,4 +154,5 @@ Nenhuma coluna muda: `cidade` e `estado` continuam como texto na tabela
 `centro_custo`. A lista de municípios brasileiros (fonte: IBGE) passa a ser um
 arquivo de dados do sistema, não uma tabela nova.
 
-A pesquisa nas listagens (RF03) não altera o modelo de dados.
+A pesquisa nas listagens (RF03), o ícone de olho nas senhas (RF04) e a recusa
+de desativação (RF05) não alteram o modelo de dados.
