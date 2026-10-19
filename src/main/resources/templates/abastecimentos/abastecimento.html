@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/layout :: cabeca('Registrar abastecimento')}"></head>
+<body>
+
+<nav th:replace="~{fragmentos/barra :: barra(${logado})}"></nav>
+
+<main class="container py-4">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <h1 class="h4 mb-3">Registrar abastecimento</h1>
+
+            <!-- Aviso de falta de internet. Começa escondido; o script
+                 aviso-sem-conexao.js mostra a caixa quando o celular perde
+                 o sinal. -->
+            <div id="aviso-sem-conexao" class="alert alert-warning d-none" role="alert">
+                Sem conexão com a internet. Não é possível registrar agora, e nada foi
+                enviado. Quando o sinal voltar, toque no botão de novo.
+            </div>
+
+            <!-- Mensagem do servidor quando o lançamento é recusado. -->
+            <div class="alert alert-danger" role="alert" th:if="${erro}"
+                 th:text="${erro}">Ação recusada.</div>
+
+            <!-- Sem veículo na lista não há o que lançar: a tela explica em
+                 vez de mostrar uma caixa vazia. -->
+            <div class="alert alert-secondary" role="alert" th:if="${veiculos.isEmpty()}">
+                Nenhum veículo disponível para lançamento. Fale com o administrador.
+            </div>
+
+            <!-- Empresa, motorista e data de registro não estão aqui: quem
+                 preenche é o servidor. O data-exige-conexao avisa o script de
+                 que este envio precisa de internet. -->
+            <form th:object="${abastecimentoForm}" th:action="@{/abastecimentos}" method="post"
+                  data-exige-conexao
+                  th:unless="${veiculos.isEmpty()}">
+
+                <div class="mb-3">
+                    <label for="veiculoId" class="form-label">Veículo</label>
+                    <select id="veiculoId" th:field="*{veiculoId}"
+                            class="form-select form-select-lg"
+                            th:classappend="${#fields.hasErrors('veiculoId')} ? 'is-invalid'"
+                            required>
+                        <option value="">Escolha...</option>
+                        <option th:each="veiculo : ${veiculos}"
+                                th:value="${veiculo.id}"
+                                th:text="|${veiculo.nome} (${veiculo.placaFormatada})|">
+                            Veículo (ABC-1D23)
+                        </option>
+                    </select>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('veiculoId')}"
+                         th:errors="*{veiculoId}">Erro</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="data" class="form-label">Data do abastecimento</label>
+                    <!-- Já vem com a data de hoje. Pode ser trocada por um dia
+                         anterior, para quem esqueceu de lançar na hora. -->
+                    <input type="date" id="data" th:field="*{data}"
+                           class="form-control form-control-lg"
+                           th:classappend="${#fields.hasErrors('data')} ? 'is-invalid'"
+                           required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('data')}"
+                         th:errors="*{data}">Erro</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="quilometragem" class="form-label">Quilometragem (km)</label>
+                    <!-- inputmode="numeric" abre o teclado só de números no
+                         celular. -->
+                    <input type="text" id="quilometragem" th:field="*{quilometragem}"
+                           class="form-control form-control-lg"
+                           inputmode="numeric" autocomplete="off"
+                           th:classappend="${#fields.hasErrors('quilometragem')} ? 'is-invalid'"
+                           required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('quilometragem')}"
+                         th:errors="*{quilometragem}">Erro</div>
+                </div>
+
+                <!-- Litros e valor são campos de texto, e não type="number",
+                     porque alguns celulares não deixam digitar vírgula em
+                     campo numérico. O inputmode="decimal" abre o teclado de
+                     números com a vírgula. -->
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="litros" class="form-label">Litros</label>
+                        <input type="text" id="litros" th:field="*{litros}"
+                               class="form-control form-control-lg"
+                               inputmode="decimal" autocomplete="off" placeholder="45,50"
+                               th:classappend="${#fields.hasErrors('litros')} ? 'is-invalid'"
+                               required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('litros')}"
+                             th:errors="*{litros}">Erro</div>
+                    </div>
+
+                    <div class="col-6 mb-3">
+                        <label for="valor" class="form-label">Valor (R$)</label>
+                        <input type="text" id="valor" th:field="*{valor}"
+                               class="form-control form-control-lg"
+                               inputmode="decimal" autocomplete="off" placeholder="280,00"
+                               th:classappend="${#fields.hasErrors('valor')} ? 'is-invalid'"
+                               required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('valor')}"
+                             th:errors="*{valor}">Erro</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="posto" class="form-label">
+                        Posto <span class="text-secondary fw-normal">(opcional)</span>
+                    </label>
+                    <input type="text" id="posto" th:field="*{posto}"
+                           class="form-control form-control-lg" maxlength="120"
+                           th:classappend="${#fields.hasErrors('posto')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('posto')}"
+                         th:errors="*{posto}">Erro</div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg py-3">
+                        Registrar abastecimento
+                    </button>
+                    <a th:href="@{/lancamentos}" class="btn btn-outline-secondary btn-lg">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+            <a th:href="@{/lancamentos}" class="btn btn-link px-0"
+               th:if="${veiculos.isEmpty()}">Voltar</a>
+
+        </div>
+    </div>
+
+</main>
+
+<script th:src="@{/js/aviso-sem-conexao.js}"></script>
+
+</body>
+</html>

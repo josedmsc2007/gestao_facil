@@ -94,6 +94,10 @@ public class SecurityConfig {
                         // Motorista. O Administrador nao lanca saida.
                         .requestMatchers("/saidas/**").hasRole("MOTORISTA")
 
+                        // #007-RN004: abastecimento, so o Motorista, como a
+                        // saida.
+                        .requestMatchers("/abastecimentos/**").hasRole("MOTORISTA")
+
                         // #006-RN009: o painel de veiculos em uso e o
                         // encerramento de saida, so o Administrador. Fica
                         // fora de /saidas/** justamente por ser de outro

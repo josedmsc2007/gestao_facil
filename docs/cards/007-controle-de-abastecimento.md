@@ -31,6 +31,10 @@ abastecidos, valor gasto e posto (opcional), vinculados a um veículo.
 - **RN004** – Apenas o perfil Motorista registra abastecimento.
 - **RN005** – A data informada pode ser retroativa; o sistema grava também
   a `data_registro`, preenchida automaticamente e não editável (regra 4).
+- **RN006** – Quilometragem, litros e valor precisam ser maiores que zero, e
+  a data do abastecimento não pode estar no futuro.
+- **RN007** – O abastecimento guarda quem o lançou (`usuario_id`), sempre o
+  motorista logado.
 
 ## Critérios de aceitação
 
@@ -40,16 +44,17 @@ abastecidos, valor gasto e posto (opcional), vinculados a um veículo.
 - [ ] Abastecimento fica vinculado corretamente ao veículo
 - [ ] Sistema impede vincular o abastecimento a um veículo de outra
       empresa
+- [ ] Sistema impede vincular o abastecimento a um veículo inativo
 - [ ] O lançamento grava a data de registro separadamente da data
       informada
+- [ ] Sistema recusa quilometragem, litros ou valor iguais a zero ou
+      negativos
+- [ ] Sistema recusa data de abastecimento no futuro e aceita data passada
+- [ ] O abastecimento fica registrado com o motorista que o lançou
+- [ ] Administrador e Operador não acessam a tela de abastecimento
 
 ## Impacto no modelo de dados
 
 A tabela `abastecimento` já existe no modelo de dados. Campos previstos:
-`veiculo_id`, `data`, `quilometragem`, `litros`, `valor`, `posto`
-(opcional), `data_registro` e `empresa_id`.
-
-> **Nota:** assumi que só o Motorista registra abastecimento, por ser
-> quem está com o veículo na hora de abastecer — nenhum outro card diz o
-> contrário, mas vale a equipe confirmar se o Administrador também
-> precisa lançar em nome de outro motorista.
+`veiculo_id`, `usuario_id` (quem lançou), `data`, `quilometragem`,
+`litros`, `valor`, `posto` (opcional), `data_registro` e `empresa_id`.

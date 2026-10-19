@@ -17,11 +17,11 @@ entregues ao cliente e ao professor — não os edite.
 - Spring Security (autenticação e perfis)
 - H2 em memória **só nos testes** (`src/test/resources/application.properties`)
 - Projeto único: não há API REST separada nem app mobile separado
-- No celular, o sistema é adicionado à tela inicial (PWA simples)
+- No celular, funciona pelo navegador (site responsivo; não é PWA e não tem modo offline)
 
 ## Estado atual
 
-**Pronto: cards #001, #001.1, #003, #002, #004, #005 e #006, com 235 testes.**
+**Pronto: cards #001, #001.1, #003, #002, #004, #005, #006 e #007, com 257 testes.**
 O #002 foi feito depois do #003, fora da ordem dos números.
 
 - **#001 e #001.1, login:** autenticação com isolamento por empresa, bloqueio
@@ -89,6 +89,19 @@ O #002 foi feito depois do #003, fora da ordem dos números.
     `data_registro` é preenchida pelo construtor de `UsoVeiculo`, e
     `data_registro_devolucao` e `usuario_devolucao_id` por
     `UsoVeiculo.registrarDevolucao` (regra 4 e RN008)
+- **#007, abastecimento** (`/abastecimentos/**`, só Motorista,
+  `AbastecimentoController`): `GET /abastecimentos/novo` mostra o formulário
+  (veículo, data, quilometragem, litros, valor e posto opcional), com a data
+  de hoje; `POST /abastecimentos` grava e volta para `/lancamentos`. A caixa
+  de veículos traz os da empresa que não estão `INATIVO`, inclusive o
+  `EM_USO`. Nenhuma rota tem `{id}`. As regras ficam no
+  `AbastecimentoService.registrar` (maior que zero, data não futura, veículo
+  da empresa e não inativo), que recusa com `LancamentoRecusadoException`;
+  veículo de outra empresa ou inexistente responde 404 no controller, como no
+  #006. O abastecimento **não muda o status** do veículo. Litros e valor
+  aceitam vírgula ou ponto (`controller/form/DecimalComVirgulaEditor`, ligado
+  só no `@InitBinder` desse controller). O link fica em `/lancamentos`, com ou
+  sem veículo em aberto
 - **Carga inicial** (`config/CargaInicial`), em duas etapas independentes:
   - empresa reservada `gestao-facil` com três Operadores (`jose.lopes`,
     `victor.ruan`, `leonardo.silva`, senha `operador12345`, com troca
@@ -99,7 +112,9 @@ O #002 foi feito depois do #003, fora da ordem dos números.
 
 **Ainda não existe:**
 
-- as entidades e CRUDs de abastecimento, manutenção e anexo de manutenção
+- as entidades e telas de manutenção e anexo de manutenção (#008)
+- tela que liste o histórico de abastecimentos (#009). Também não há edição
+  nem exclusão de abastecimento
 - a transição de status do veículo para `EM_MANUTENCAO` (#008). Hoje existem
   `DISPONIVEL`, `EM_USO` e `INATIVO` na prática
 - tela que mostre o histórico das saídas já fechadas. `usuario_devolucao_id`
@@ -112,8 +127,7 @@ O #002 foi feito depois do #003, fora da ordem dos números.
   inativação barra o **próximo** login e não a sessão aberta
 
 **Provisório, será substituído pelos próximos cards:** a tela `/painel`
-(administrador), que existe só para o redirecionamento por perfil ter destino,
-e o botão desligado de abastecimento em `/lancamentos` (#007).
+(administrador), que existe só para o redirecionamento por perfil ter destino.
 
 **Divergências a resolver com o PO:**
 
@@ -126,6 +140,10 @@ e o botão desligado de abastecimento em `/lancamentos` (#007).
   do RF05 trazia como opcional. O código segue o card e **não** tem a coluna.
 - #006: não há limite de quanto para trás a data de saída/devolução pode ir,
   nem conferência de sobreposição com outro uso do mesmo veículo.
+- #007: a quilometragem **não** é comparada com a dos abastecimentos
+  anteriores do veículo (o card não tem essa regra), então um km menor que o
+  último é aceito. Também não há limite de quanto para trás a data pode ir.
+
 ## Regras que o código precisa garantir
 
 1. **Isolamento por empresa (multi-tenant).** Toda consulta filtra pela empresa
@@ -162,8 +180,8 @@ Toda tabela, exceto `empresa`, tem `empresa_id`. O detalhamento dos campos está
 em `Modelo_de_Dados_Gestao_Facil.pdf` (atenção: o PDF usa fontes embutidas e
 não é legível por extração automática de texto).
 
-Existem hoje `empresa`, `usuario`, `anexo_usuario`, `veiculo`, `centro_custo`
-e `uso_veiculo`.
+Existem hoje `empresa`, `usuario`, `anexo_usuario`, `veiculo`, `centro_custo`,
+`uso_veiculo` e `abastecimento`.
 
 `veiculo` nasceu no #004 com `empresa_id`, `nome`, `ano`, `renavam`, `placa`,
 `tipo_combustivel` e `status`. Ela **não tem** o campo `ativo` das outras: o
@@ -186,6 +204,12 @@ Administrador no lugar dele (#006-RN008). As duas últimas são nulas enquanto a
 saída está em aberto **e nas devoluções antigas**, lançadas antes de as
 colunas existirem: tela que as mostrar precisa tratar o nulo. Não há
 identificador local, porque não há lançamento offline (#006-RN006).
+
+`abastecimento` nasceu no #007 com `empresa_id`, `veiculo_id`, `usuario_id`
+(quem lançou, #007-RN007), `data` (`LocalDate`, só a data), `quilometragem`
+(inteiro), `litros` (`numeric(10,3)`), `valor` (`numeric(10,2)`), `posto`
+(opcional, até 120) e `data_registro`, preenchida pelo construtor. A linha
+não muda depois de gravada: não há edição.
 
 Colunas acrescentadas pelos cards às tabelas que já existiam:
 
@@ -276,6 +300,11 @@ só a **comparação** ignora a caixa (`existsByEmpresaIdAndNomeIgnoreCase`).
   `@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")`. O campo já vem com a hora
   de agora, sem segundos. `data_registro` não tem setter nem campo de
   formulário.
+- **Número com casas decimais** (litros, valor) é `BigDecimal`, nunca
+  `double`, e o campo da tela é `type="text" inputmode="decimal"` (alguns
+  celulares não deixam digitar vírgula em `type="number"`). Quem lê a vírgula
+  é o `DecimalComVirgulaEditor`, registrado no `@InitBinder` do controller.
+  Só data, sem hora (abastecimento), é `LocalDate` com `<input type="date">`.
 - **Tela que exige conexão** inclui a caixa `id="aviso-sem-conexao"`, marca o
   formulário com `data-exige-conexao` e carrega `js/aviso-sem-conexao.js`,
   que também desliga o botão depois do primeiro toque.

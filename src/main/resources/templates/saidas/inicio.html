@@ -76,12 +76,12 @@
                 </div>
             </div>
 
-            <!-- O abastecimento e do proximo card (RF07). O botao desligado
-                 mostra onde ele vai ficar. -->
+            <!-- Abre o formulário de abastecimento. Aparece sempre, com ou
+                 sem veículo em aberto. -->
             <div class="d-grid mt-3">
-                <button class="btn btn-outline-secondary btn-lg py-3" type="button" disabled>
-                    Registrar abastecimento (em breve)
-                </button>
+                <a th:href="@{/abastecimentos/novo}" class="btn btn-outline-primary btn-lg py-3">
+                    Registrar abastecimento
+                </a>
             </div>
 
         </div>

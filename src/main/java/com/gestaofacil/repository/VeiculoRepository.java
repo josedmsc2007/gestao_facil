@@ -63,6 +63,13 @@ public interface VeiculoRepository extends JpaRepository<Veiculo, Long> {
      */
     List<Veiculo> findByEmpresaIdAndStatusOrderByNome(Long empresaId, StatusVeiculo status);
 
+    /**
+     * Os veiculos da empresa FORA de um status. A tela de abastecimento
+     * (#007) usa com INATIVO: oferece toda a frota em circulacao, inclusive
+     * o veiculo EM_USO, que e justamente o que o motorista esta abastecendo.
+     */
+    List<Veiculo> findByEmpresaIdAndStatusNotOrderByNome(Long empresaId, StatusVeiculo status);
+
     /** a placa ja existe nesta empresa? Usado no cadastro. */
     boolean existsByEmpresaIdAndPlaca(Long empresaId, String placa);
 
